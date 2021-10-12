@@ -165,7 +165,7 @@ class CaffeinatedPawn {
 		return r;
 	}
 
-	Result search(Board b, short depth, short alpha, short beta, short maxDepth, Stats s) {
+	Result search(Board b, short depth, short alpha, short beta, short maxDepth, Stats s, boolean isNullMove) {
 		if (to.get())
 			return null;
 
@@ -218,6 +218,31 @@ class CaffeinatedPawn {
 
 		r.score = -32767;
 
+		boolean isRootPosition = maxDepth == depth;
+		boolean inCheck = b.isKingAttacked();
+		int nmReduceDepth = depth > 6 ? 4 : 3;
+		if (depth >= nmReduceDepth && !inCheck && !isRootPosition && !isNullMove) {
+			b.doNullMove();
+
+			Result nm = search(b, (short)(depth - nmReduceDepth), (short)-beta, (short)(-beta + 1), maxDepth, s, true);
+
+			b.undoMove();
+
+			if (nm == null)
+				return null;
+
+			int score = -nm.score;
+
+			if (score >= beta) {
+				Result verification = search(b, (short)(depth - nmReduceDepth), (short)(beta - 1), (short)beta, maxDepth, s, false);
+
+				if (verification.score >= beta) {
+					r.score = beta;
+					return r;
+				}
+			}
+		}
+
 		List<Move> moves = b.pseudoLegalMoves();
 
 		int n_moves_tried = 0;
@@ -229,7 +254,7 @@ class CaffeinatedPawn {
 			b.doMove(move);
 			n_moves_tried++;
 
-			Result child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s);
+			Result child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, false);
 			if (child == null) {
 				b.undoMove();
 
@@ -284,7 +309,7 @@ class CaffeinatedPawn {
 
 				short depth = 2;
 				while(!bLocal.isMated() && to.get() == false) {
-					search(bLocal, depth, (short)-32767, (short)32767, depth);
+					search(bLocal, depth, (short)-32767, (short)32767, depth, false);
 
 					depth++;
 				}
@@ -301,7 +326,7 @@ class CaffeinatedPawn {
 		short add_alpha = 75, add_beta = 75;
 		short depth = 1;
 		while(!b.isMated() && to.get() == false) {
-			Result r = search(b, depth, alpha, beta, depth, s);
+			Result r = search(b, depth, alpha, beta, depth, s, false);
 			if (r == null || r.m == null)
 				break;
 
