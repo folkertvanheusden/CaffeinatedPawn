@@ -310,9 +310,9 @@ class CaffeinatedPawn {
 			if (nm == null)
 				return null;
 
-			int score = -nm.score;
+			int nmscore = -nm.score;
 
-			if (score >= beta) {
+			if (nmscore >= beta) {
 				Result verification = search(b, (short)(depth - nmReduceDepth), (short)(beta - 1), (short)beta, maxDepth, s, false);
 
 				if (verification.score >= beta) {
