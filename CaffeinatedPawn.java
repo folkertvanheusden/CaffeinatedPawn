@@ -2,6 +2,7 @@ import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.MoveBackup;
 import com.github.bhlangonijr.chesslib.move.Move;
 import com.github.bhlangonijr.chesslib.Piece;
+import com.github.bhlangonijr.chesslib.PieceType;
 import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.Square;
 import java.lang.Math.*;
@@ -24,6 +25,24 @@ class CaffeinatedPawn {
 		}
 
 		to.set(true);
+	}
+
+	short evalPieceType(PieceType p) {
+		switch(p) {
+			case KING:
+				return 10000;
+			case QUEEN:
+				return 900;
+			case ROOK:
+				return 500;
+			case BISHOP:
+			case KNIGHT:
+				return 300;
+			case PAWN:
+				return 100;
+		}
+
+		return -1;
 	}
 
 	short evaluate(Board b) {
@@ -90,6 +109,13 @@ class CaffeinatedPawn {
 		return b.isMoveLegal(m, true);
 	}
 
+	boolean underAttackByOpponent(Board b, Square to) {
+		List<Square> squares = new ArrayList<Square>();
+		squares.add(to);
+
+		return b.isSquareAttackedBy(squares, b.getSideToMove().flip());
+	}
+
 	Result quiescenceSearch(Board b, short alpha, short beta, short qsDepth, short maxDepth, Stats s) {
 		if (to.get())
 			return null;
@@ -121,7 +147,7 @@ class CaffeinatedPawn {
 			short bigDelta = 975;
 			LinkedList<MoveBackup> moveBackups = b.getBackup();
 
-			if (moveBackups.get(moveBackups.size() - 1).getMove().getPromotion() != null)
+			if (moveBackups.get(moveBackups.size() - 1).getMove().getPromotion().getPieceType() != PieceType.NONE)
 				bigDelta += 975;
 
 			if (r.score < alpha - bigDelta) {
@@ -133,13 +159,34 @@ class CaffeinatedPawn {
 				alpha = r.score;
 		}
 
-		List<Move> moves = b.pseudoLegalCaptures();
+		List<Move> moves = inCheck ? orderMoves(b, b.pseudoLegalMoves(), null) : b.pseudoLegalCaptures();
 
 		int n_moves_tried = 0;
 
 		for(Move move : moves) {
 			if (b.isMoveLegal(move, true) == false)
 				continue;
+
+			if (!inCheck) {
+				PieceType attacker = b.getPiece(move.getFrom()).getPieceType();
+				Piece victimPiece = null;
+				boolean isEnPassant = false;
+
+				if (attacker == PieceType.PAWN && !move.getFrom().getFile().equals(move.getTo().getFile()))  // en-passant
+					isEnPassant = true;
+				else
+					victimPiece = b.getPiece(move.getTo());
+
+				if (victimPiece != null || isEnPassant) {
+					PieceType victim = isEnPassant ? PieceType.PAWN : victimPiece.getPieceType();
+
+					short attackerValue = evalPieceType(attacker);
+					short victimValue = evalPieceType(victim);
+
+					if (attackerValue > victimValue && underAttackByOpponent(b, move.getTo()))
+						continue;
+				}
+			}
 
 			b.doMove(move);
 			n_moves_tried++;
@@ -185,7 +232,7 @@ class CaffeinatedPawn {
 		for(Move m : in) {
 			if (m == ttMove)
 				out1.add(0, m);
-			else if (m.getPromotion() != null || b.isAttackedBy(m))
+			else if (m.getPromotion().getPieceType() != PieceType.NONE || b.isAttackedBy(m))
 				out1.add(m);
 			else
 				out2.add(m);
