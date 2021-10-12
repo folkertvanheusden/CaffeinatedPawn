@@ -121,6 +121,7 @@ class CaffeinatedPawn {
 			return null;
 
 		s.nodeCount++;
+		s.qsNodeCount++;
 
 		Result r = new Result();
 
@@ -485,6 +486,8 @@ class CaffeinatedPawn {
 				depth++;
 			}
 		}
+
+		System.out.printf("# QS: %.2f%%\n", s.qsNodeCount * 100.0 / s.nodeCount);
 
 		try {
 			toThread.interrupt();

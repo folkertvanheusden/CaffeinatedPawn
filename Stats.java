@@ -1,7 +1,7 @@
 class Stats
 {
 	short deepestDepth;
-	long nodeCount;
+	long nodeCount, qsNodeCount;
 
 	Stats() {
 		deepestDepth = 0;
