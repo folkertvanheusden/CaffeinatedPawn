@@ -5,6 +5,9 @@ import com.github.bhlangonijr.chesslib.Piece;
 import com.github.bhlangonijr.chesslib.PieceType;
 import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.Square;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
 import java.lang.Math.*;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -498,14 +501,117 @@ class CaffeinatedPawn {
 
 		Board b = new Board();
 
-		Result r = cp.doSearch(10000, b);
+		InputStreamReader in = new InputStreamReader(System.in);
+		BufferedReader br = new BufferedReader(in);
 
-		if (r != null && r.m != null) {
-			b.doMove(r.m);
+		for(;;) {
+			String line = null;
 
-			System.out.print(r.score);
-			System.out.print(' ');
-			System.out.println(r.m);
+			try {
+				line = br.readLine();
+			}
+			catch(IOException io) {
+				break;
+			}
+
+			String[] parts = line.split(" ");
+
+			if (parts[0].equals("uci")) {
+				System.out.println("id name CaffeinatedPawn");
+				System.out.println("id author Folkert van Heusden");
+				System.out.println("uciok");
+			}
+			else if (line.equals("ucinewgame"))
+				b = new Board();
+			else if (parts[0].equals("position")) {
+				boolean moves = false;
+				Side side = Side.WHITE;
+
+				for(int i=1; i<parts.length;) {
+					if (parts[i].equals("fen")) {
+						String fen = new String();
+
+						for(int f = i + 1; f<Math.min(i + 7, parts.length); f++)
+							fen += parts[f] + " ";
+
+						b.loadFromFen(fen);
+
+						side = parts[i + 2].equals("w") ? Side.WHITE : Side.BLACK;
+
+						i += 7;
+					}
+					else if (parts[i].equals("startpos")) {
+						b = new Board();
+						i++;
+					}
+					else if (parts[i].equals("moves")) {
+						moves = true;
+						i++;
+					}
+					else if (moves) {
+						while(i < parts.length && parts[i].length() < 4)
+							i++;
+
+						Move m = new Move(parts[i], b.getSideToMove());
+						b.doMove(m);
+
+						i++;
+					}
+					else {
+					}
+				}
+			}
+			else if (parts[0].equals("go")) {
+				int movesToGo = 40 - b.getHistory().size() / 2;
+				int wTime = 0, bTime = 0, wInc = 0, bInc = 0;
+				boolean timeSet = false;
+
+				for(int i=1; i<parts.length; i++) {
+					if (parts[i].equals("depth"))
+						i++;
+					else if (parts[i].equals("movetime")) {
+						wTime = bTime = Integer.parseInt(parts[++i]);
+						timeSet = true;
+					}
+					else if (parts[i].equals("wtime"))
+						wTime = Integer.parseInt(parts[++i]);
+					else if (parts[i].equals("btime"))
+						bTime = Integer.parseInt(parts[++i]);
+					else if (parts[i].equals("winc"))
+						wInc = Integer.parseInt(parts[++i]);
+					else if (parts[i].equals("binc"))
+						bInc = Integer.parseInt(parts[++i]);
+					else if (parts[i].equals("movestogo"))
+						movesToGo = Integer.parseInt(parts[++i]);
+				}
+
+				int thinkTime = 0;
+				if (timeSet)
+					thinkTime = b.getSideToMove() == Side.WHITE ? wTime : bTime;
+				else {
+					int curNMoves = movesToGo <= 0 ? 40 : movesToGo;
+
+					int timeInc = b.getSideToMove() == Side.WHITE ? wInc : bInc;
+
+					int ms = b.getSideToMove() == Side.WHITE ? wTime : bTime;
+
+					thinkTime = (int)((ms + (curNMoves - 1) * timeInc) / (double)(curNMoves + 7));
+
+					int limit_duration_min = ms / 15;
+					if (thinkTime > limit_duration_min)
+						thinkTime = limit_duration_min;
+				}
+
+				Result r = cp.doSearch(thinkTime, b);
+
+				System.out.print("bestmove ");
+				System.out.println(r.m);
+			}
+			else if (line.equals("quit"))
+				break;
+			else {
+				System.out.println("# That (" + parts[0] + ") was not understood");
+			} 
 		}
 	}
 }
