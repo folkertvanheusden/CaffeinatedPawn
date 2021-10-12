@@ -6,6 +6,7 @@ import com.github.bhlangonijr.chesslib.Square;
 import java.lang.Math.*;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Date;
 import java.util.List;
 
 class CaffeinatedPawn {
@@ -85,6 +86,81 @@ class CaffeinatedPawn {
 		return b.isMoveLegal(m, true);
 	}
 
+	Result quiescenceSearch(Board b, short alpha, short beta, short qsDepth, short maxDepth) {
+		if (to.get())
+			return null;
+
+		Result r = new Result();
+
+		if (b.isMated()) {
+			r.score = -9999;
+			return r;
+		}
+
+		if (b.isDraw() || b.isInsufficientMaterial() || b.isStaleMate()) {
+			r.score = 0;
+			return r;
+		}
+
+		r.score = -32767;
+
+		boolean inCheck = b.isKingAttacked();
+
+		if (!inCheck) {
+			r.score = evaluate(b);
+
+			if (r.score > alpha && r.score >= beta)
+				return r;
+
+			if (alpha < r.score)
+				alpha = r.score;
+		}
+
+		List<Move> moves = b.pseudoLegalCaptures();
+
+		int n_moves_tried = 0;
+
+		for(Move move : moves) {
+			if (b.isMoveLegal(move, true) == false)
+				continue;
+
+			b.doMove(move);
+			n_moves_tried++;
+
+			Result child = quiescenceSearch(b, (short)-beta, (short)-alpha, (short)(qsDepth + 1), maxDepth);
+			if (child == null) {
+				b.undoMove();
+
+				return null;
+			}
+
+			short score = (short)-child.score;
+
+			b.undoMove();
+
+			if (score > r.score) {
+				r.score = score;
+				r.m = move;
+
+				if (score > alpha) {
+					alpha = score;
+
+					if (score >= beta)
+						break;
+				}
+			}
+		}
+
+		if (n_moves_tried == 0) {
+			if (inCheck)
+				r.score = (short)(-10000 + maxDepth + qsDepth);
+			else if (r.score == -32767)
+				r.score = evaluate(b);
+		}
+
+		return r;
+	}
+
 	Result search(Board b, short depth, short alpha, short beta, short maxDepth) {
 		if (to.get())
 			return null;
@@ -96,10 +172,8 @@ class CaffeinatedPawn {
 			return r;
 		}
 
-		if (depth == 0) {
-			r.score = evaluate(b);
-			return r;
-		}
+		if (depth == 0)
+			return quiescenceSearch(b, alpha, beta, (short)0, maxDepth);
 
 		if (b.isDraw() || b.isInsufficientMaterial() || b.isStaleMate()) {
 			r.score = 0;
@@ -189,12 +263,15 @@ class CaffeinatedPawn {
 	}
 
 	Result doSearch(int maxThinkTime, Board b) {
+		long start = new Date().getTime();
+
 		Thread toThread = new Thread(() -> { if (maxThinkTime >= 0) { timeoutThread(maxThinkTime); } });
 		toThread.start();
 
 		int cores = Runtime.getRuntime().availableProcessors();
 
 		List<Thread> threads = new ArrayList<Thread>();
+		/*
 		for(int i=0; i<cores - 1; i++) {
 			Thread cur = new Thread(() -> { 
 				Board bLocal = b.clone();
@@ -210,7 +287,7 @@ class CaffeinatedPawn {
 			cur.start();
 
 			threads.add(cur);
-		}
+		}*/
 
 		Result chosen = null;
 		short alpha = -32768, beta = 32767;
@@ -244,6 +321,10 @@ class CaffeinatedPawn {
 				if (beta > 10000)
 					beta = 10000;
 
+				long now = new Date().getTime();
+
+				System.out.printf("info depth %d score cp %d time %d pv %s\n", depth, r.score, now - start, r.m);
+
 				chosen = r;
 
 				depth++;
@@ -274,9 +355,14 @@ class CaffeinatedPawn {
 
 		Board b = new Board();
 
-		Result r = cp.doSearch(1000, b);
+		Result r = cp.doSearch(10000, b);
 
-		if (r != null && r.m != null)
+		if (r != null && r.m != null) {
 			b.doMove(r.m);
+
+			System.out.print(r.score);
+			System.out.print(' ');
+			System.out.println(r.m);
+		}
 	}
 }
