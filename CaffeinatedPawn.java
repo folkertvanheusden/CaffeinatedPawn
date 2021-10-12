@@ -161,7 +161,7 @@ class CaffeinatedPawn {
 
 		List<Move> moves = inCheck ? orderMoves(b, b.pseudoLegalMoves(), null) : b.pseudoLegalCaptures();
 
-		int n_moves_tried = 0;
+		int nMovesTried = 0;
 
 		for(Move move : moves) {
 			if (b.isMoveLegal(move, false) == false)
@@ -189,7 +189,7 @@ class CaffeinatedPawn {
 			}
 
 			b.doMove(move);
-			n_moves_tried++;
+			nMovesTried++;
 
 			Result child = quiescenceSearch(b, (short)-beta, (short)-alpha, (short)(qsDepth + 1), maxDepth, s);
 			if (child == null) {
@@ -215,7 +215,7 @@ class CaffeinatedPawn {
 			}
 		}
 
-		if (n_moves_tried == 0) {
+		if (nMovesTried == 0) {
 			if (inCheck)
 				r.score = (short)(-10000 + maxDepth + qsDepth);
 			else if (r.score == -32767)
@@ -264,6 +264,8 @@ class CaffeinatedPawn {
 			return r;
 		}
 
+		boolean isRootPosition = maxDepth == depth;
+
 		Move ttMove = null;  // used later on for sorting
 		TtElement te = tt.lookup(b.hashCode());
 		if (te != null && isValidMove(b, te.m)) {
@@ -283,8 +285,8 @@ class CaffeinatedPawn {
 				else if (te.f == ttFlag.UPPERBOUND && workScore <= alpha)
 					use = true;
 
-				if (use) {
-					r.score = score;
+				if (use && (!isRootPosition || te.m != null)) {
+					r.score = workScore;
 					r.m     = te.m;
 
 					return r;
@@ -296,7 +298,6 @@ class CaffeinatedPawn {
 
 		r.score = -32767;
 
-		boolean isRootPosition = maxDepth == depth;
 		boolean inCheck = b.isKingAttacked();
 		int nmReduceDepth = depth > 6 ? 4 : 3;
 		if (depth >= nmReduceDepth && !inCheck && !isRootPosition && !isNullMove) {
@@ -325,14 +326,14 @@ class CaffeinatedPawn {
 
 		moves = orderMoves(b, moves, ttMove);
 
-		int n_moves_tried = 0;
+		int nMovesTried = 0;
 
 		for(Move move : moves) {
 			if (b.isMoveLegal(move, false) == false)
 				continue;
 
 			b.doMove(move);
-			n_moves_tried++;
+			nMovesTried++;
 
 			Result child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, false);
 			if (child == null) {
@@ -358,8 +359,12 @@ class CaffeinatedPawn {
 			}
 		}
 
-		if (n_moves_tried == 0)
-			r.score = 0;
+		if (nMovesTried == 0) {
+			if (inCheck)
+				r.score = (short)(-10000 + maxDepth - depth);
+			else
+				r.score = 0;
+		}
 
                 ttFlag flag = ttFlag.EXACT;
 
@@ -379,17 +384,20 @@ class CaffeinatedPawn {
 		Thread toThread = new Thread(() -> { if (maxThinkTime >= 0) { timeoutThread(maxThinkTime); } });
 		toThread.start();
 
+		tt.incAge();
+
 		int cores = Runtime.getRuntime().availableProcessors();
 
 		List<Thread> threads = new ArrayList<Thread>();
-		/*
-		for(int i=0; i<cores - 1; i++) {
+
+/*		for(int i=0; i<cores - 1; i++) {
 			Thread cur = new Thread(() -> { 
 				Board bLocal = b.clone();
+				Stats s = new Stats();
 
 				short depth = 2;
 				while(!bLocal.isMated() && to.get() == false) {
-					search(bLocal, depth, (short)-32767, (short)32767, depth, false);
+					search(bLocal, depth, (short)-32767, (short)32767, depth, s, false);
 
 					depth++;
 				}
@@ -398,8 +406,8 @@ class CaffeinatedPawn {
 			cur.start();
 
 			threads.add(cur);
-		}*/
-
+		}
+*/
 		Stats s = new Stats();
 		Result chosen = null;
 		short alpha = -32768, beta = 32767;
