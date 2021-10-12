@@ -67,6 +67,7 @@ class Tt
 			useSubIndex = mdi;
 
 		TtElement e = new TtElement();
+		e.hash  = hash;
 		e.score = score;
 		e.depth = depth;
 		e.f     = f;
