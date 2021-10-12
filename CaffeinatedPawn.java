@@ -164,7 +164,7 @@ class CaffeinatedPawn {
 		int n_moves_tried = 0;
 
 		for(Move move : moves) {
-			if (b.isMoveLegal(move, true) == false)
+			if (b.isMoveLegal(move, false) == false)
 				continue;
 
 			if (!inCheck) {
@@ -328,7 +328,7 @@ class CaffeinatedPawn {
 		int n_moves_tried = 0;
 
 		for(Move move : moves) {
-			if (b.isMoveLegal(move, true) == false)
+			if (b.isMoveLegal(move, false) == false)
 				continue;
 
 			b.doMove(move);
@@ -442,6 +442,9 @@ class CaffeinatedPawn {
 				System.out.printf("info depth %d score cp %d time %d nodes %d nps %d pv %s\n", depth, r.score, timeDiff, s.nodeCount, nps, r.m);
 
 				chosen = r;
+
+				if (timeDiff > maxThinkTime / 2)
+					break;
 
 				depth++;
 			}
