@@ -398,6 +398,8 @@ class CaffeinatedPawn {
 	Result doSearch(int maxThinkTime, Board b) {
 		long start = new Date().getTime();
 
+		to.set(false);
+
 		Thread toThread = new Thread(() -> { if (maxThinkTime >= 0) { timeoutThread(maxThinkTime); } });
 		toThread.start();
 
@@ -602,10 +604,16 @@ class CaffeinatedPawn {
 						thinkTime = limit_duration_min;
 				}
 
+				System.out.printf("# think time: %d\n", thinkTime);
+
 				Result r = cp.doSearch(thinkTime, b);
 
-				System.out.print("bestmove ");
-				System.out.println(r.m);
+				if (r == null)
+					System.out.println("bestmove a1a1");
+				else {
+					System.out.print("bestmove ");
+					System.out.println(r.m);
+				}
 			}
 	                else if (line.equals("isready"))
                         	System.out.println("readyok");
