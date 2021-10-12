@@ -607,11 +607,15 @@ class CaffeinatedPawn {
 				System.out.print("bestmove ");
 				System.out.println(r.m);
 			}
-			else if (line.equals("quit"))
+	                else if (line.equals("isready"))
+                        	System.out.println("readyok");
+			else if (line.equals("quit") || line.equals("exit"))
 				break;
 			else {
 				System.out.println("# That (" + parts[0] + ") was not understood");
 			} 
+
+			System.out.flush();
 		}
 	}
 }
