@@ -326,6 +326,8 @@ class CaffeinatedPawn {
 
 		moves = orderMoves(b, moves, ttMove);
 
+		int lmrStart = !inCheck && depth >= 2 ? 4 : 999;
+
 		int nMovesTried = 0;
 
 		for(Move move : moves) {
@@ -335,7 +337,33 @@ class CaffeinatedPawn {
 			b.doMove(move);
 			nMovesTried++;
 
-			Result child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, false);
+			Result child = null;
+
+			if (inCheck) {
+				child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, isNullMove);
+			}
+			else {
+				boolean isLMR = false;
+
+				short newDepth = (short)(depth - 1);
+				if (nMovesTried >= lmrStart && move.getPromotion().getPieceType() == PieceType.NONE && b.isAttackedBy(move) == false) {
+					isLMR = true;
+
+					if (nMovesTried >= lmrStart + 2)
+						newDepth = (short)((depth - 1) * 2 / 3);
+					else
+						newDepth = (short)(depth - 2);
+				}
+
+				boolean checkAfterMove = b.isKingAttacked();
+
+				if (!checkAfterMove)
+					child = search(b, (short)newDepth, (short)-beta, (short)-alpha, maxDepth, s, isNullMove);
+
+				if (checkAfterMove || (child != null && isLMR && -child.score > alpha))
+					child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, isNullMove);
+			}
+
 			if (child == null) {
 				b.undoMove();
 
