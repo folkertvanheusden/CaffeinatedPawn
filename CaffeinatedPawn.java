@@ -72,6 +72,8 @@ class CaffeinatedPawn {
 			b.undoMove();
 		}
 
+		score += PSQ.psq(b);
+
 		if (b.getSideToMove() == Side.BLACK)
 			score = (short)-score;
 
