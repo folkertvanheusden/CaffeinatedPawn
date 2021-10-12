@@ -86,9 +86,11 @@ class CaffeinatedPawn {
 		return b.isMoveLegal(m, true);
 	}
 
-	Result quiescenceSearch(Board b, short alpha, short beta, short qsDepth, short maxDepth) {
+	Result quiescenceSearch(Board b, short alpha, short beta, short qsDepth, short maxDepth, Stats s) {
 		if (to.get())
 			return null;
+
+		s.nodeCount++;
 
 		Result r = new Result();
 
@@ -127,7 +129,7 @@ class CaffeinatedPawn {
 			b.doMove(move);
 			n_moves_tried++;
 
-			Result child = quiescenceSearch(b, (short)-beta, (short)-alpha, (short)(qsDepth + 1), maxDepth);
+			Result child = quiescenceSearch(b, (short)-beta, (short)-alpha, (short)(qsDepth + 1), maxDepth, s);
 			if (child == null) {
 				b.undoMove();
 
@@ -161,9 +163,11 @@ class CaffeinatedPawn {
 		return r;
 	}
 
-	Result search(Board b, short depth, short alpha, short beta, short maxDepth) {
+	Result search(Board b, short depth, short alpha, short beta, short maxDepth, Stats s) {
 		if (to.get())
 			return null;
+
+		s.nodeCount++;
 
 		Result r = new Result();
 
@@ -173,7 +177,7 @@ class CaffeinatedPawn {
 		}
 
 		if (depth == 0)
-			return quiescenceSearch(b, alpha, beta, (short)0, maxDepth);
+			return quiescenceSearch(b, alpha, beta, (short)0, maxDepth, s);
 
 		if (b.isDraw() || b.isInsufficientMaterial() || b.isStaleMate()) {
 			r.score = 0;
@@ -223,7 +227,7 @@ class CaffeinatedPawn {
 			b.doMove(move);
 			n_moves_tried++;
 
-			Result child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth);
+			Result child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s);
 			if (child == null) {
 				b.undoMove();
 
@@ -289,12 +293,13 @@ class CaffeinatedPawn {
 			threads.add(cur);
 		}*/
 
+		Stats s = new Stats();
 		Result chosen = null;
 		short alpha = -32768, beta = 32767;
 		short add_alpha = 75, add_beta = 75;
 		short depth = 1;
 		while(!b.isMated() && to.get() == false) {
-			Result r = search(b, depth, alpha, beta, depth);
+			Result r = search(b, depth, alpha, beta, depth, s);
 			if (r == null || r.m == null)
 				break;
 
@@ -323,7 +328,11 @@ class CaffeinatedPawn {
 
 				long now = new Date().getTime();
 
-				System.out.printf("info depth %d score cp %d time %d pv %s\n", depth, r.score, now - start, r.m);
+				long timeDiff = now - start;
+
+				int nps = (int)(s.nodeCount * 1000 / timeDiff);
+
+				System.out.printf("info depth %d score cp %d time %d nodes %d nps %d pv %s\n", depth, r.score, timeDiff, s.nodeCount, nps, r.m);
 
 				chosen = r;
 
