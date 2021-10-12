@@ -78,21 +78,6 @@ class CaffeinatedPawn {
 		List<Square> blackPawnSquares = b.getPieceLocation(Piece.BLACK_PAWN);
 		score -= blackPawnSquares.size() * 100;
 
-		if (b.getSideToMove() == Side.WHITE) {
-			score += b.pseudoLegalMoves().size();
-
-			b.doNullMove();
-			score -= b.pseudoLegalMoves().size();
-			b.undoMove();
-		}
-		else {
-			score -= b.pseudoLegalMoves().size();
-
-			b.doNullMove();
-			score += b.pseudoLegalMoves().size();
-			b.undoMove();
-		}
-
 		score += PSQ.psq(b);
 
 		if (b.getSideToMove() == Side.BLACK)
