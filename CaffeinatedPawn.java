@@ -231,7 +231,7 @@ class CaffeinatedPawn {
 		ArrayList<Move> out2 = new ArrayList<Move>();
 
 		for(Move m : in) {
-			if (m == ttMove)
+			if (m.equals(ttMove))
 				out1.add(0, m);
 			else if (Piece.NONE.equals(m.getPromotion()) == false || isCaptureMove(b, m))
 				out1.add(m);
