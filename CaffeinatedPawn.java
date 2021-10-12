@@ -1,4 +1,5 @@
 import com.github.bhlangonijr.chesslib.Board;
+import com.github.bhlangonijr.chesslib.MoveBackup;
 import com.github.bhlangonijr.chesslib.move.Move;
 import com.github.bhlangonijr.chesslib.Piece;
 import com.github.bhlangonijr.chesslib.Side;
@@ -7,6 +8,7 @@ import java.lang.Math.*;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 class CaffeinatedPawn {
@@ -116,6 +118,17 @@ class CaffeinatedPawn {
 			if (r.score > alpha && r.score >= beta)
 				return r;
 
+			short bigDelta = 975;
+			LinkedList<MoveBackup> moveBackups = b.getBackup();
+
+			if (moveBackups.get(moveBackups.size() - 1).getMove().getPromotion() != null)
+				bigDelta += 975;
+
+			if (r.score < alpha - bigDelta) {
+				r.score = alpha;
+				return r;
+			}
+
 			if (alpha < r.score)
 				alpha = r.score;
 		}
@@ -163,6 +176,24 @@ class CaffeinatedPawn {
 		}
 
 		return r;
+	}
+
+	List<Move> orderMoves(Board b, final List<Move> in, Move ttMove) {
+		ArrayList<Move> out1 = new ArrayList<Move>();
+		ArrayList<Move> out2 = new ArrayList<Move>();
+
+		for(Move m : in) {
+			if (m == ttMove)
+				out1.add(0, m);
+			else if (m.getPromotion() != null || b.isAttackedBy(m))
+				out1.add(m);
+			else
+				out2.add(m);
+		}
+
+		out1.addAll(out2);
+
+		return out1;
 	}
 
 	Result search(Board b, short depth, short alpha, short beta, short maxDepth, Stats s, boolean isNullMove) {
@@ -244,6 +275,8 @@ class CaffeinatedPawn {
 		}
 
 		List<Move> moves = b.pseudoLegalMoves();
+
+		moves = orderMoves(b, moves, ttMove);
 
 		int n_moves_tried = 0;
 
