@@ -3,11 +3,14 @@ import com.github.bhlangonijr.chesslib.move.Move;
 import com.github.bhlangonijr.chesslib.Piece;
 import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.Square;
+import java.lang.Math.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.List;
 
 class CaffeinatedPawn {
 	AtomicBoolean to = new AtomicBoolean(false);
+
+	Tt tt = new Tt();
 
 	void timeoutThread(int ms) {
 		try {
@@ -20,8 +23,8 @@ class CaffeinatedPawn {
 		to.set(true);
 	}
 
-	int evaluate(Board b) {
-		int score = 0;
+	short evaluate(Board b) {
+		short score = 0;
 
 		List<Square> whiteQueenSquares = b.getPieceLocation(Piece.WHITE_QUEEN);
 		score += whiteQueenSquares.size() * 900;
@@ -69,12 +72,20 @@ class CaffeinatedPawn {
 		}
 
 		if (b.getSideToMove() == Side.BLACK)
-			score = -score;
+			score = (short)-score;
 
 		return score;
 	}
 
-	Result search(Board b, int depth, int alpha, int beta) {
+	boolean isValidMove(Board b, Move m) {
+		Piece fromPiece = b.getPiece(m.getFrom());
+		if (fromPiece == null)
+			return false;
+
+		return b.isMoveLegal(m, true);
+	}
+
+	Result search(Board b, short depth, short alpha, short beta, short maxDepth) {
 		if (to.get())
 			return null;
 
@@ -95,6 +106,36 @@ class CaffeinatedPawn {
 			return r;
 		}
 
+		Move ttMove = null;  // used later on for sorting
+		TtElement te = tt.lookup(b.hashCode());
+		if (te != null && isValidMove(b, te.m)) {
+			ttMove = te.m;
+
+			if (te.depth >= depth) {
+				boolean use = false;
+
+				short csd = (short)(maxDepth - depth);
+				short score = te.score;
+				short workScore = (short)(Math.abs(score) > 9800 ? (score < 0 ? score + csd : score - csd) : score);
+
+				if (te.f == ttFlag.EXACT)
+					use = true;
+				else if (te.f == ttFlag.LOWERBOUND && workScore >= beta)
+					use = true;
+				else if (te.f == ttFlag.UPPERBOUND && workScore <= alpha)
+					use = true;
+
+				if (use) {
+					r.score = score;
+					r.m     = te.m;
+
+					return r;
+				}
+			}
+		}
+
+		int startAlpha = alpha;
+
 		r.score = -32767;
 
 		List<Move> moves = b.pseudoLegalMoves();
@@ -108,11 +149,11 @@ class CaffeinatedPawn {
 			b.doMove(move);
 			n_moves_tried++;
 
-			Result child = search(b, depth - 1, -beta, -alpha);
+			Result child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth);
 			if (child == null)
 				return null;
 
-			int score = -child.score;
+			short score = (short)-child.score;
 
 			b.undoMove();
 
@@ -129,10 +170,17 @@ class CaffeinatedPawn {
 			}
 		}
 
-		if (n_moves_tried == 0) {
+		if (n_moves_tried == 0)
 			r.score = 0;
-			return r;
-		}
+
+                ttFlag flag = ttFlag.EXACT;
+
+                if (r.score <= startAlpha)
+                        flag = ttFlag.UPPERBOUND;
+                else if (r.score >= beta)
+                        flag = ttFlag.LOWERBOUND;
+
+                tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? r.m : ttMove);
 
 		return r;
 	}
@@ -148,7 +196,7 @@ class CaffeinatedPawn {
 		Board b = new Board();
 
 		for(;!b.isMated();) {
-			Result r = cp.search(b, 3, -32767, 32767);
+			Result r = cp.search(b, (short)3, (short)-32767, (short)32767, (short)3);
 			if (r == null || r.m == null)
 				break;
 
