@@ -4,12 +4,12 @@ import com.github.bhlangonijr.chesslib.Piece;
 import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.Square;
 import java.lang.Math.*;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.List;
 
 class CaffeinatedPawn {
 	AtomicBoolean to = new AtomicBoolean(false);
-
 	Tt tt = new Tt();
 
 	void timeoutThread(int ms) {
@@ -150,8 +150,11 @@ class CaffeinatedPawn {
 			n_moves_tried++;
 
 			Result child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth);
-			if (child == null)
+			if (child == null) {
+				b.undoMove();
+
 				return null;
+			}
 
 			short score = (short)-child.score;
 
@@ -185,35 +188,95 @@ class CaffeinatedPawn {
 		return r;
 	}
 
-	public static void main(String [] args) {
-		CaffeinatedPawn cp = new CaffeinatedPawn();
-
-		int to_ms = 1000;
-
-		Thread toThread = new Thread(() -> { cp.timeoutThread(to_ms); });
+	Result doSearch(int maxThinkTime, Board b) {
+		Thread toThread = new Thread(() -> { if (maxThinkTime >= 0) { timeoutThread(maxThinkTime); } });
 		toThread.start();
 
-		Board b = new Board();
+		int cores = Runtime.getRuntime().availableProcessors();
 
-		for(;!b.isMated();) {
-			Result r = cp.search(b, (short)3, (short)-32767, (short)32767, (short)3);
+		List<Thread> threads = new ArrayList<Thread>();
+		for(int i=0; i<cores - 1; i++) {
+			Thread cur = new Thread(() -> { 
+				Board bLocal = b.clone();
+
+				short depth = 2;
+				while(!bLocal.isMated() && to.get() == false) {
+					search(bLocal, depth, (short)-32767, (short)32767, depth);
+
+					depth++;
+				}
+		       
+			});
+			cur.start();
+
+			threads.add(cur);
+		}
+
+		Result chosen = null;
+		short alpha = -32768, beta = 32767;
+		short add_alpha = 75, add_beta = 75;
+		short depth = 1;
+		while(!b.isMated() && to.get() == false) {
+			Result r = search(b, depth, alpha, beta, depth);
 			if (r == null || r.m == null)
 				break;
 
-			b.doMove(r.m);
+			if (r.score <= alpha) {
+				beta = (short)((alpha + beta) / 2);
+				alpha = (short)(r.score - add_alpha);
+				if (alpha < -10000)
+					alpha = -10000;
+				add_alpha += add_alpha / 15 + 1;
+			}
+			else if (r.score >= beta) {
+				alpha = (short)((alpha + beta) / 2);
+				beta = (short)(r.score + add_beta);
+				if (beta > 10000)
+					beta = 10000;
+				add_beta += add_beta / 15 + 1;
+			}
+			else {
+				alpha = (short)(r.score - add_alpha);
+				if (alpha < -10000)
+					alpha = -10000;
 
-			System.out.print(r.m);
-			System.out.print(' ');
-			System.out.println(r.score);
-			System.out.println(b);
-			System.out.println("");
+				beta = (short)(r.score + add_beta);
+				if (beta > 10000)
+					beta = 10000;
+
+				chosen = r;
+
+				depth++;
+			}
 		}
 
-		toThread.interrupt();
 		try {
+			toThread.interrupt();
 			toThread.join();
 		}
 		catch(InterruptedException ie) {
 		}
+
+		for(Thread t : threads) {
+			try {
+				t.interrupt();
+				t.join();
+			}
+			catch(InterruptedException ie) {
+			}
+		}
+
+		return chosen;
+	}
+
+	public static void main(String [] args) {
+		CaffeinatedPawn cp = new CaffeinatedPawn();
+
+		Board b = new Board();
+
+		Result r = cp.doSearch(1000, b);
+
+		if (r != null && r.m != null)
+			b.doMove(r.m);
 	}
 }
