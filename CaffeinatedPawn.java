@@ -104,6 +104,18 @@ class CaffeinatedPawn {
 		return b.isSquareAttackedBy(squares, b.getSideToMove().flip());
 	}
 
+	boolean isCaptureMove(Board b, Move move) {
+		PieceType attacker = b.getPiece(move.getFrom()).getPieceType();
+
+		if (attacker == PieceType.PAWN && !move.getFrom().getFile().equals(move.getTo().getFile()))  // en-passant
+			return true;
+
+		if (Piece.NONE.equals(b.getPiece(move.getTo())) == false)
+			return true;
+
+		return false;
+	}
+
 	Result quiescenceSearch(Board b, short alpha, short beta, short qsDepth, short maxDepth, Stats s) {
 		if (to.get())
 			return null;
@@ -136,7 +148,7 @@ class CaffeinatedPawn {
 			short bigDelta = 975;
 			LinkedList<MoveBackup> moveBackups = b.getBackup();
 
-			if (moveBackups.get(moveBackups.size() - 1).getMove().getPromotion().getPieceType() != PieceType.NONE)
+			if (Piece.NONE.equals(moveBackups.get(moveBackups.size() - 1).getMove().getPromotion()) == false)
 				bigDelta += 975;
 
 			if (r.score < alpha - bigDelta) {
@@ -221,7 +233,7 @@ class CaffeinatedPawn {
 		for(Move m : in) {
 			if (m == ttMove)
 				out1.add(0, m);
-			else if (m.getPromotion().getPieceType() != PieceType.NONE || b.isAttackedBy(m))
+			else if (Piece.NONE.equals(m.getPromotion()) == false || isCaptureMove(b, m))
 				out1.add(m);
 			else
 				out2.add(m);
@@ -335,7 +347,7 @@ class CaffeinatedPawn {
 				boolean isLMR = false;
 
 				short newDepth = (short)(depth - 1);
-				if (nMovesTried >= lmrStart && move.getPromotion().getPieceType() == PieceType.NONE && b.isAttackedBy(move) == false) {
+				if (nMovesTried >= lmrStart && Piece.NONE.equals(move.getPromotion()) && isCaptureMove(b, move) == false) {
 					isLMR = true;
 
 					if (nMovesTried >= lmrStart + 2)
