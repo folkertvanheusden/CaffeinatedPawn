@@ -91,7 +91,7 @@ class CaffeinatedPawn {
 
 	boolean isValidMove(Board b, Move m) {
 		Piece fromPiece = b.getPiece(m.getFrom());
-		if (fromPiece.getPieceType() == PieceType.NONE)
+		if (Piece.NONE.equals(fromPiece))
 			return false;
 
 		return b.isMoveLegal(m, true);
