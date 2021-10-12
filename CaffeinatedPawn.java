@@ -463,6 +463,8 @@ class CaffeinatedPawn {
 				long now = new Date().getTime();
 
 				long timeDiff = now - start;
+				if (timeDiff == 0)
+					timeDiff = 1;
 
 				int nps = (int)(s.nodeCount * 1000 / timeDiff);
 
