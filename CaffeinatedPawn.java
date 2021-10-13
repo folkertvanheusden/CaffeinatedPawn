@@ -53,6 +53,8 @@ class CaffeinatedPawn {
 	short evaluate(Board b) {
 		short score = 0;
 
+
+
 		List<Square> whiteQueenSquares = b.getPieceLocation(Piece.WHITE_QUEEN);
 		score += whiteQueenSquares.size() * 900;
 
@@ -662,7 +664,7 @@ class CaffeinatedPawn {
 			else if (parts[0].equals("go")) {
 				cp.stopPonder();
 
-				int movesToGo = 40 - b.getHistory().size() / 2;
+				int movesToGo = 40 - b.getMoveCounter();
 				int wTime = 0, bTime = 0, wInc = 0, bInc = 0;
 				boolean timeSet = false;
 
