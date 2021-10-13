@@ -5,6 +5,8 @@ import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.Square;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 class PSQ
 {
@@ -143,6 +145,28 @@ class PSQ
 	     42,  46,  48,  50,  50,  48,  46,  42
 	};
 
+	static Map<Piece, int []> map = new TreeMap<Piece, int []>();
+
+	static {
+		map.put(Piece.WHITE_KING, KingPSTMG);
+		map.put(Piece.BLACK_KING, KingPSTMG);
+
+		map.put(Piece.WHITE_QUEEN, QueenPSTMG);
+		map.put(Piece.BLACK_QUEEN, QueenPSTMG);
+
+		map.put(Piece.WHITE_ROOK, RookPSTMG);
+		map.put(Piece.BLACK_ROOK, RookPSTMG);
+
+		map.put(Piece.WHITE_BISHOP, BishopPSTMG);
+		map.put(Piece.BLACK_BISHOP, BishopPSTMG);
+
+		map.put(Piece.WHITE_KNIGHT, KnightPSTMG);
+		map.put(Piece.BLACK_KNIGHT, KnightPSTMG);
+
+		map.put(Piece.WHITE_PAWN, PawnPSTMG);
+		map.put(Piece.BLACK_PAWN, PawnPSTMG);
+	}
+
 	static int processPsq(List<Square> squares, int values[], int xor) {
 		int score = 0;
 
@@ -150,6 +174,10 @@ class PSQ
 			score += values[sq.ordinal() ^ xor];
 
 		return score;
+	}
+
+	static int psq(Square sq, Piece p) {
+		return map.get(p)[sq.ordinal() ^ (p.getPieceSide() == Side.BLACK ? 56 : 0)];
 	}
 
 	static int psq(Board b) {

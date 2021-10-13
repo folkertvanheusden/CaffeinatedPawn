@@ -60,8 +60,11 @@ class CaffeinatedPawn {
 
 			Piece p = b.getPiece(sq);
 
-			if (Piece.NONE.equals(p) == false)
+			if (Piece.NONE.equals(p) == false) {
 				counts[p.getPieceSide().ordinal()][p.getPieceType().ordinal()]++;
+
+				score += PSQ.psq(sq, p);
+			}
 		}
 
 		score += counts[Side.WHITE.ordinal()][PieceType.QUEEN.ordinal()] * 900;
@@ -78,8 +81,6 @@ class CaffeinatedPawn {
 
 		score += counts[Side.WHITE.ordinal()][PieceType.PAWN.ordinal()] * 100;
 		score -= counts[Side.BLACK.ordinal()][PieceType.PAWN.ordinal()] * 100;
-
-		score += PSQ.psq(b);
 
 		if (b.getSideToMove() == Side.BLACK)
 			score = (short)-score;
