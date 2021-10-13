@@ -53,37 +53,31 @@ class CaffeinatedPawn {
 	short evaluate(Board b) {
 		short score = 0;
 
+		int counts[][] = { { 0, 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0 } };
 
+		for(int sqIdx = 0; sqIdx < 64; sqIdx++) {
+			Square sq = Square.squareAt(sqIdx);
 
-		List<Square> whiteQueenSquares = b.getPieceLocation(Piece.WHITE_QUEEN);
-		score += whiteQueenSquares.size() * 900;
+			Piece p = b.getPiece(sq);
 
-		List<Square> blackQueenSquares = b.getPieceLocation(Piece.BLACK_QUEEN);
-		score -= blackQueenSquares.size() * 900;
+			if (Piece.NONE.equals(p) == false)
+				counts[p.getPieceSide().ordinal()][p.getPieceType().ordinal()]++;
+		}
 
-		List<Square> whiteRookSquares = b.getPieceLocation(Piece.WHITE_ROOK);
-		score += whiteRookSquares.size() * 500;
+		score += counts[Side.WHITE.ordinal()][PieceType.QUEEN.ordinal()] * 900;
+		score -= counts[Side.BLACK.ordinal()][PieceType.QUEEN.ordinal()] * 900;
 
-		List<Square> blackRookSquares = b.getPieceLocation(Piece.BLACK_ROOK);
-		score -= blackRookSquares.size() * 500;
+		score += counts[Side.WHITE.ordinal()][PieceType.ROOK.ordinal()] * 500;
+		score -= counts[Side.BLACK.ordinal()][PieceType.ROOK.ordinal()] * 500;
 
-		List<Square> whiteBishopSquares = b.getPieceLocation(Piece.WHITE_BISHOP);
-		score += whiteBishopSquares.size() * 300;
+		score += counts[Side.WHITE.ordinal()][PieceType.BISHOP.ordinal()] * 300;
+		score -= counts[Side.BLACK.ordinal()][PieceType.BISHOP.ordinal()] * 300;
 
-		List<Square> blackBishopSquares = b.getPieceLocation(Piece.BLACK_BISHOP);
-		score -= blackBishopSquares.size() * 300;
+		score += counts[Side.WHITE.ordinal()][PieceType.KNIGHT.ordinal()] * 300;
+		score -= counts[Side.BLACK.ordinal()][PieceType.KNIGHT.ordinal()] * 300;
 
-		List<Square> whiteKnightSquares = b.getPieceLocation(Piece.WHITE_KNIGHT);
-		score += whiteKnightSquares.size() * 300;
-
-		List<Square> blackKnightSquares = b.getPieceLocation(Piece.BLACK_KNIGHT);
-		score -= blackKnightSquares.size() * 300;
-
-		List<Square> whitePawnSquares = b.getPieceLocation(Piece.WHITE_PAWN);
-		score += whitePawnSquares.size() * 100;
-
-		List<Square> blackPawnSquares = b.getPieceLocation(Piece.BLACK_PAWN);
-		score -= blackPawnSquares.size() * 100;
+		score += counts[Side.WHITE.ordinal()][PieceType.PAWN.ordinal()] * 100;
+		score -= counts[Side.BLACK.ordinal()][PieceType.PAWN.ordinal()] * 100;
 
 		score += PSQ.psq(b);
 
