@@ -71,7 +71,10 @@ class CaffeinatedPawn {
 
 				material[sNr][ptNr]++;
 
-				score += PSQ.psq(sq, p);
+				if (s == Side.WHITE)
+					score += PSQ.psq(sq, p);
+				else
+					score -= PSQ.psq(sq, p);
 
 				if (pt == PieceType.PAWN)
 					n_pawn[sNr][sq.getFile().ordinal()]++;
