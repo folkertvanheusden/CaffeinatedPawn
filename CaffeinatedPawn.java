@@ -18,6 +18,7 @@ import java.util.List;
 class CaffeinatedPawn {
 	AtomicBoolean to = new AtomicBoolean(false);
 	Tt tt = new Tt();
+	Thread ponderThread = null;
 
 	void timeoutThread(int ms) {
 		try {
@@ -316,6 +317,9 @@ class CaffeinatedPawn {
 			if (nmscore >= beta) {
 				Result verification = search(b, (short)(depth - nmReduceDepth), (short)(beta - 1), (short)beta, maxDepth, s, false);
 
+				if (verification == null)
+					return null;
+
 				if (verification.score >= beta) {
 					r.score = beta;
 					return r;
@@ -417,11 +421,11 @@ class CaffeinatedPawn {
 
 		tt.incAge();
 
-		int cores = Runtime.getRuntime().availableProcessors();
+		int cores = 1; // TODO Runtime.getRuntime().availableProcessors();
 
 		List<Thread> threads = new ArrayList<Thread>();
 
-/*		for(int i=0; i<cores - 1; i++) {
+		for(int i=0; i<cores - 1; i++) {
 			Thread cur = new Thread(() -> { 
 				Board bLocal = b.clone();
 				Stats s = new Stats();
@@ -438,7 +442,7 @@ class CaffeinatedPawn {
 
 			threads.add(cur);
 		}
-*/
+
 		Stats s = new Stats();
 		Result chosen = null;
 		short alpha = -32768, beta = 32767;
@@ -512,6 +516,66 @@ class CaffeinatedPawn {
 		return chosen;
 	}
 
+	public void startPonder(Board bIn) {
+		Board bLocal = bIn.clone();
+
+		to.set(false);
+
+		ponderThread = new Thread(() -> {
+			Stats s = new Stats();
+			Result chosen = null;
+			short alpha = -32768, beta = 32767;
+			short add_alpha = 75, add_beta = 75;
+			short depth = 1;
+			while(!bLocal.isMated() && to.get() == false) {
+				Result r = search(bLocal, depth, alpha, beta, depth, s, false);
+				if (r == null || r.m == null)
+					break;
+
+				if (r.score <= alpha) {
+					beta = (short)((alpha + beta) / 2);
+					alpha = (short)(r.score - add_alpha);
+					if (alpha < -10000)
+						alpha = -10000;
+					add_alpha += add_alpha / 15 + 1;
+				}
+				else if (r.score >= beta) {
+					alpha = (short)((alpha + beta) / 2);
+					beta = (short)(r.score + add_beta);
+					if (beta > 10000)
+						beta = 10000;
+					add_beta += add_beta / 15 + 1;
+				}
+				else {
+					alpha = (short)(r.score - add_alpha);
+					if (alpha < -10000)
+						alpha = -10000;
+
+					beta = (short)(r.score + add_beta);
+					if (beta > 10000)
+						beta = 10000;
+
+					depth++;
+				}
+			}
+		});
+
+		ponderThread.start();
+	}
+
+	public void stopPonder() {
+		if (ponderThread != null) {
+			to.set(true);
+
+			try {
+				ponderThread.join();
+				ponderThread = null;
+			}
+			catch(InterruptedException ie) {
+			}
+		}
+	}
+
 	public static void main(String [] args) {
 		CaffeinatedPawn cp = new CaffeinatedPawn();
 
@@ -578,6 +642,8 @@ class CaffeinatedPawn {
 				}
 			}
 			else if (parts[0].equals("go")) {
+				cp.stopPonder();
+
 				int movesToGo = 40 - b.getHistory().size() / 2;
 				int wTime = 0, bTime = 0, wInc = 0, bInc = 0;
 				boolean timeSet = false;
@@ -628,6 +694,8 @@ class CaffeinatedPawn {
 					System.out.print("bestmove ");
 					System.out.println(r.m);
 				}
+
+				cp.startPonder(b);
 			}
 	                else if (line.equals("isready"))
                         	System.out.println("readyok");
