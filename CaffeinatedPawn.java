@@ -232,6 +232,7 @@ class CaffeinatedPawn {
 
 	List<MyMove> orderMoves(Board b, final List<Move> in, Move ttMove) {
 		ArrayList<MyMove> work = new ArrayList<MyMove>();
+		work.ensureCapacity(in.size());
 
 		for(Move move : in) {
 			int score = 0;
