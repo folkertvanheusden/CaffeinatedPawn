@@ -53,7 +53,9 @@ class CaffeinatedPawn {
 	short evaluate(Board b) {
 		short score = 0;
 
-		int counts[][] = { { 0, 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0 } };
+		int material[][] = { { 0, 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0 } };
+
+		int n_pawn[][] = { { 0, 0, 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0 } };
 
 		for(int sqIdx = 0; sqIdx < 64; sqIdx++) {
 			Square sq = Square.squareAt(sqIdx);
@@ -61,26 +63,41 @@ class CaffeinatedPawn {
 			Piece p = b.getPiece(sq);
 
 			if (Piece.NONE.equals(p) == false) {
-				counts[p.getPieceSide().ordinal()][p.getPieceType().ordinal()]++;
+				PieceType pt = p.getPieceType();
+				int ptNr = pt.ordinal();
+
+				Side s = p.getPieceSide();
+				int sNr = s.ordinal();
+
+				material[sNr][ptNr]++;
 
 				score += PSQ.psq(sq, p);
+
+				if (pt == PieceType.PAWN)
+					n_pawn[sNr][sq.getFile().ordinal()]++;
 			}
 		}
 
-		score += counts[Side.WHITE.ordinal()][PieceType.QUEEN.ordinal()] * 900;
-		score -= counts[Side.BLACK.ordinal()][PieceType.QUEEN.ordinal()] * 900;
+		// double pawns are no good
+		for(int x=0; x<8; x++) {
+			score += n_pawn[Side.WHITE.ordinal()][x] >= 2 ? -15 : 0;
+			score -= n_pawn[Side.BLACK.ordinal()][x] >= 2 ? 15 : 0;
+		}
 
-		score += counts[Side.WHITE.ordinal()][PieceType.ROOK.ordinal()] * 500;
-		score -= counts[Side.BLACK.ordinal()][PieceType.ROOK.ordinal()] * 500;
+		score += material[Side.WHITE.ordinal()][PieceType.QUEEN.ordinal()] * 900;
+		score -= material[Side.BLACK.ordinal()][PieceType.QUEEN.ordinal()] * 900;
 
-		score += counts[Side.WHITE.ordinal()][PieceType.BISHOP.ordinal()] * 300;
-		score -= counts[Side.BLACK.ordinal()][PieceType.BISHOP.ordinal()] * 300;
+		score += material[Side.WHITE.ordinal()][PieceType.ROOK.ordinal()] * 500;
+		score -= material[Side.BLACK.ordinal()][PieceType.ROOK.ordinal()] * 500;
 
-		score += counts[Side.WHITE.ordinal()][PieceType.KNIGHT.ordinal()] * 300;
-		score -= counts[Side.BLACK.ordinal()][PieceType.KNIGHT.ordinal()] * 300;
+		score += material[Side.WHITE.ordinal()][PieceType.BISHOP.ordinal()] * 300;
+		score -= material[Side.BLACK.ordinal()][PieceType.BISHOP.ordinal()] * 300;
 
-		score += counts[Side.WHITE.ordinal()][PieceType.PAWN.ordinal()] * 100;
-		score -= counts[Side.BLACK.ordinal()][PieceType.PAWN.ordinal()] * 100;
+		score += material[Side.WHITE.ordinal()][PieceType.KNIGHT.ordinal()] * 300;
+		score -= material[Side.BLACK.ordinal()][PieceType.KNIGHT.ordinal()] * 300;
+
+		score += material[Side.WHITE.ordinal()][PieceType.PAWN.ordinal()] * 100;
+		score -= material[Side.BLACK.ordinal()][PieceType.PAWN.ordinal()] * 100;
 
 		if (b.getSideToMove() == Side.BLACK)
 			score = (short)-score;
