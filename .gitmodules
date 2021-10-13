@@ -1,0 +1,3 @@
+[submodule "chesslib"]
+	path = chesslib
+	url = git@github.com:bhlangonijr/chesslib.git
