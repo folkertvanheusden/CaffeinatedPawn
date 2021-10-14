@@ -2,7 +2,7 @@ package com.vanheusden.CaffeinatedPawn;
 
 import com.github.bhlangonijr.chesslib.move.Move;
 
-enum ttFlag { NOTVALID, EXACT, LOWERBOUND, UPPERBOUND };
+enum ttFlag { EXACT, LOWERBOUND, UPPERBOUND };
 
 class TtElement
 {
