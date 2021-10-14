@@ -1,3 +1,5 @@
+package com.vanheusden.CaffeinatedPawn;
+
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.MoveBackup;
 import com.github.bhlangonijr.chesslib.move.Move;

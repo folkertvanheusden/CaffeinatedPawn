@@ -1,3 +1,5 @@
+package com.vanheusden.CaffeinatedPawn;
+
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.Piece;
 import com.github.bhlangonijr.chesslib.PieceType;

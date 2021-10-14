@@ -1,3 +1,5 @@
+package com.vanheusden.CaffeinatedPawn;
+
 import com.github.bhlangonijr.chesslib.move.Move;
 import java.lang.Math.*;
 

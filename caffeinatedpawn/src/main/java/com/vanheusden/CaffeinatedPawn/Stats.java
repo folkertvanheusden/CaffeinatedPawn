@@ -1,3 +1,5 @@
+package com.vanheusden.CaffeinatedPawn;
+
 class Stats
 {
 	short deepestDepth;
