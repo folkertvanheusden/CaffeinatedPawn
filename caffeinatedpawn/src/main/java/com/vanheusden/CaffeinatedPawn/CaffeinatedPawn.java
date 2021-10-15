@@ -235,6 +235,7 @@ class CaffeinatedPawn {
 		}
 
 		r.score = -32767;
+		List<Move> bestPv = null;
 
 		boolean inCheck = b.isKingAttacked();
 
@@ -306,7 +307,11 @@ class CaffeinatedPawn {
 
 			if (score > r.score) {
 				r.score = score;
-				r.m = move;
+
+				bestPv = child.pv;
+				if (bestPv == null)
+					bestPv = new LinkedList<Move>();
+				bestPv.add(0, move);
 
 				if (score > alpha) {
 					alpha = score;
@@ -404,7 +409,9 @@ class CaffeinatedPawn {
 
 				if (use && (!isRootPosition || te.m != null)) {
 					r.score = workScore;
-					r.m     = te.m;
+
+					r.pv = new LinkedList<Move>();
+					r.pv.add(te.m);
 
 					return r;
 				}
@@ -414,6 +421,8 @@ class CaffeinatedPawn {
 		int startAlpha = alpha;
 
 		r.score = -32767;
+
+		List<Move> bestPv = null;
 
 		boolean inCheck = b.isKingAttacked();
 		int nmReduceDepth = depth > 6 ? 4 : 3;
@@ -496,7 +505,11 @@ class CaffeinatedPawn {
 
 			if (score > r.score) {
 				r.score = score;
-				r.m = move;
+
+				bestPv = child.pv;
+				if (bestPv == null)
+					bestPv = new LinkedList<Move>();
+				bestPv.add(0, move);
 
 				if (score > alpha) {
 					alpha = score;
@@ -521,7 +534,15 @@ class CaffeinatedPawn {
                 else if (r.score >= beta)
                         flag = ttFlag.LOWERBOUND;
 
-                tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? r.m : ttMove);
+		Move m = null;
+
+		if (bestPv != null) {
+			r.pv = bestPv;
+
+			m = bestPv.get(0);
+		}
+
+                tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? m : ttMove);
 
 		return r;
 	}
@@ -565,7 +586,7 @@ class CaffeinatedPawn {
 		short depth = 1;
 		while(!b.isMated() && to.get() == false) {
 			Result r = search(b, depth, alpha, beta, depth, s, false);
-			if (r == null || r.m == null)
+			if (r == null || r.pv == null)
 				break;
 
 			if (r.score <= alpha) {
@@ -599,7 +620,17 @@ class CaffeinatedPawn {
 
 				int nps = (int)(s.nodeCount * 1000 / timeDiff);
 
-				System.out.printf("info depth %d score cp %d time %d nodes %d nps %d pv %s\n", depth, r.score, timeDiff, s.nodeCount, nps, r.m);
+				String pv = null;
+				for(Move m : r.pv) {
+					if (pv == null)
+						pv = "";
+					else
+						pv += ' ';
+
+					pv += m;
+				}
+
+				System.out.printf("info depth %d score cp %d time %d nodes %d nps %d pv %s\n", depth, r.score, timeDiff, s.nodeCount, nps, pv);
 
 				chosen = r;
 
@@ -628,6 +659,12 @@ class CaffeinatedPawn {
 			}
 		}
 
+		if (chosen == null) {
+			chosen = new Result();
+			chosen.score = 0;
+			chosen.pv.add(b.legalMoves().get(0));
+		}
+
 		return chosen;
 	}
 
@@ -644,7 +681,7 @@ class CaffeinatedPawn {
 			short depth = 1;
 			while(!bLocal.isMated() && to.get() == false) {
 				Result r = search(bLocal, depth, alpha, beta, depth, s, false);
-				if (r == null || r.m == null)
+				if (r == null || r.pv == null)
 					break;
 
 				if (r.score <= alpha) {
@@ -803,11 +840,11 @@ class CaffeinatedPawn {
 
 				Result r = cp.doSearch(thinkTime, b);
 
-				if (r == null)
+				if (r == null || r.pv == null)
 					System.out.println("bestmove a1a1");
 				else {
 					System.out.print("bestmove ");
-					System.out.println(r.m);
+					System.out.println(r.pv.get(0));
 				}
 
 				cp.startPonder(b);
