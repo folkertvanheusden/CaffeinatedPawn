@@ -108,6 +108,19 @@ class CaffeinatedPawn {
 			score -= n_pawn[Side.BLACK.ordinal()][x] >= 2 ? 15 : 0;
 		}
 
+		// check for isolated pawns (no good)
+		for(int x=0; x<8; x++) {
+			boolean anyWhitePawnsLeft = x > 0 ? (n_pawn[Side.WHITE.ordinal()][x - 1] > 0) : false;
+			boolean anyWhitePawnsRight = x < 7 ? (n_pawn[Side.WHITE.ordinal()][x + 1] > 0) : false;
+
+			score -= (n_pawn[Side.WHITE.ordinal()][x] > 0 && anyWhitePawnsLeft == false && anyWhitePawnsRight == false) ? 10 : 0;
+
+			boolean anyBlackPawnsLeft = x > 0 ? (n_pawn[Side.BLACK.ordinal()][x - 1] > 0) : false;
+			boolean anyBlackPawnsRight = x < 7 ? (n_pawn[Side.BLACK.ordinal()][x + 1] > 0) : false;
+
+			score += (n_pawn[Side.BLACK.ordinal()][x] > 0 && anyBlackPawnsLeft == false && anyBlackPawnsRight == false) ? 10 : 0;
+		}
+
 		score += material[Side.WHITE.ordinal()][PieceType.QUEEN.ordinal()] * 900;
 		score -= material[Side.BLACK.ordinal()][PieceType.QUEEN.ordinal()] * 900;
 
