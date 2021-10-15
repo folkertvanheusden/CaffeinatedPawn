@@ -52,6 +52,25 @@ class CaffeinatedPawn {
 		return 0;  // "NONE"
 	}
 
+	short evalCenterControlHelper(Piece p) {
+		if (p.equals(Piece.NONE))
+			return 0;
+
+		if (p.getPieceSide() == Side.WHITE)
+			return 10;
+
+		return -10;
+	}
+
+	short evalCenterControl(Board b) {
+		Piece D4 = b.getPiece(Square.D4);
+		Piece D5 = b.getPiece(Square.D5);
+		Piece E4 = b.getPiece(Square.E4);
+		Piece E5 = b.getPiece(Square.E5);
+
+		return (short)(evalCenterControlHelper(D4) + evalCenterControlHelper(D5) + evalCenterControlHelper(E4) + evalCenterControlHelper(E5));
+	}
+
 	short evaluate(Board b) {
 		short score = 0;
 
@@ -103,6 +122,8 @@ class CaffeinatedPawn {
 
 		score += material[Side.WHITE.ordinal()][PieceType.PAWN.ordinal()] * 100;
 		score -= material[Side.BLACK.ordinal()][PieceType.PAWN.ordinal()] * 100;
+
+		score += evalCenterControl(b);
 
 		if (b.getSideToMove() == Side.BLACK)
 			score = (short)-score;
