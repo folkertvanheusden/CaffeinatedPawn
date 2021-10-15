@@ -78,6 +78,9 @@ class CaffeinatedPawn {
 
 		int n_pawn[][] = { { 0, 0, 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0 } };
 
+		int whiteYmax[] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+		int blackYmin[] = { 8, 8, 8, 8, 8, 8, 8, 8 };
+
 		for(int sqIdx = 0; sqIdx < 64; sqIdx++) {
 			Square sq = Square.squareAt(sqIdx);
 
@@ -97,8 +100,17 @@ class CaffeinatedPawn {
 				else
 					score -= PSQ.psq(sq, p);
 
-				if (pt == PieceType.PAWN)
-					n_pawn[sNr][sq.getFile().ordinal()]++;
+				if (pt == PieceType.PAWN) {
+					int x = sq.getFile().ordinal();
+					int y = sq.getRank().ordinal();
+
+					n_pawn[sNr][x]++;  // x
+
+					if (s == Side.WHITE)
+						whiteYmax[x] = Math.max(whiteYmax[x], y);  // y
+					else
+						blackYmin[x] = Math.min(blackYmin[x], y);  // y
+				}
 			}
 		}
 
@@ -119,6 +131,38 @@ class CaffeinatedPawn {
 			boolean anyBlackPawnsRight = x < 7 ? (n_pawn[Side.BLACK.ordinal()][x + 1] > 0) : false;
 
 			score += (n_pawn[Side.BLACK.ordinal()][x] > 0 && anyBlackPawnsLeft == false && anyBlackPawnsRight == false) ? 10 : 0;
+		}
+
+		// these values where suggested by mkchan (irc) and are from
+		// stockfish
+		final int scores[][] = { { 0, 5, 20, 30, 40, 50, 80, 0 }, { 0, 5, 20, 40, 70, 120, 200, 0 } };
+
+		// passed pawns
+		List<Square> whitePawnSquares = b.getPieceLocation(Piece.WHITE_PAWN);
+		for(Square sq : whitePawnSquares) {
+			int whitex = sq.getFile().ordinal();
+			int whitey = sq.getRank().ordinal();
+
+                        boolean left = (whitex > 0 && (blackYmin[whitex - 1] <= whitey || blackYmin[whitex - 1] == 8)) || whitex == 0;
+                        boolean front = blackYmin[whitex] < whitey || blackYmin[whitex] == 8;
+                        boolean right = (whitex < 7 && (blackYmin[whitex + 1] <= whitey || blackYmin[whitex + 1] == 8)) || whitex == 7;
+
+                        if (left && front && right)
+                                score += (short)scores[0][whitey];  // TODO: endgame (1)
+
+		}
+
+		List<Square> blackPawnSquares = b.getPieceLocation(Piece.BLACK_PAWN);
+		for(Square sq : blackPawnSquares) {
+			int blackx = sq.getFile().ordinal();
+			int blacky = sq.getRank().ordinal();
+
+                        boolean left = (blackx > 0 && (whiteYmax[blackx - 1] >= blacky || whiteYmax[blackx - 1] == -1)) || blackx == 0;
+                        boolean front = whiteYmax[blackx] > blacky || whiteYmax[blackx] == -1;
+                        boolean right = (blackx < 7 && (whiteYmax[blackx + 1] >= blacky || whiteYmax[blackx + 1] == -1)) || blackx == 7;
+
+                        if (left && front && right)
+                                score -= (short)scores[0][7 - blacky];  // TODO: endgame (1)
 		}
 
 		score += material[Side.WHITE.ordinal()][PieceType.QUEEN.ordinal()] * 900;
