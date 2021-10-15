@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.lang.Math.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Date;
 import java.util.LinkedList;
@@ -235,6 +236,7 @@ class CaffeinatedPawn {
 		}
 
 		r.score = -32767;
+		List<Move> bestPv = null;
 
 		boolean inCheck = b.isKingAttacked();
 
@@ -259,13 +261,11 @@ class CaffeinatedPawn {
 				alpha = r.score;
 		}
 
-		List<MyMove> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null);
+		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null);
 
 		int nMovesTried = 0;
 
-		for(MyMove mmove : moves) {
-			Move move = mmove.getMove();
-
+		for(Move move : moves) {
 			if (b.isMoveLegal(move, false) == false)
 				continue;
 
@@ -306,7 +306,11 @@ class CaffeinatedPawn {
 
 			if (score > r.score) {
 				r.score = score;
-				r.m = move;
+
+				bestPv = child.pv;
+				if (bestPv == null)
+					bestPv = new LinkedList<Move>();
+				bestPv.add(0, move);
 
 				if (score > alpha) {
 					alpha = score;
@@ -327,37 +331,49 @@ class CaffeinatedPawn {
 		return r;
 	}
 
-	List<MyMove> orderMoves(Board b, final List<Move> in, Move ttMove) {
-		ArrayList<MyMove> work = new ArrayList<MyMove>();
-		work.ensureCapacity(in.size());
+	class MoveComparator implements Comparator<Move> {
+		Board b;
+		Move ttMove;
 
-		for(Move move : in) {
-			int score = 0;
-
-			if (move.equals(ttMove))
-				score = 10000;
-			else {
-				PieceType attacker = b.getPiece(move.getFrom()).getPieceType();
-				int victimValue = 0;
-
-				if (attacker == PieceType.PAWN && !move.getFrom().getFile().equals(move.getTo().getFile()))  // en-passant
-					victimValue = 100;
-				else if (Piece.NONE.equals(b.getPiece(move.getTo())) == false)
-					victimValue = evalPieceType(b.getPiece(move.getTo()).getPieceType());
-
-				score += victimValue - evalPieceType(attacker);
-
-				PieceType promoPieceType = move.getPromotion().getPieceType();
-				if (promoPieceType != null)
-					score += evalPieceType(promoPieceType);
-			}
-
-			work.add(new MyMove(move, score));
+		MoveComparator(Board bIn, Move ttMoveIn) {
+			b = bIn;
+			ttMove = ttMoveIn;
 		}
 
-		Collections.sort(work);
+		int scoreMove(Move move) {
+			if (move.equals(ttMove))
+				return 10000;
 
-		return work;
+			int score = 0;
+
+			PieceType attacker = b.getPiece(move.getFrom()).getPieceType();
+			int victimValue = 0;
+
+			if (attacker == PieceType.PAWN && !move.getFrom().getFile().equals(move.getTo().getFile()))  // en-passant
+				victimValue = 100;
+			else if (Piece.NONE.equals(b.getPiece(move.getTo())) == false)
+				victimValue = evalPieceType(b.getPiece(move.getTo()).getPieceType());
+
+			score += victimValue - evalPieceType(attacker);
+
+			PieceType promoPieceType = move.getPromotion().getPieceType();
+			if (promoPieceType != null)
+				score += evalPieceType(promoPieceType);
+
+			return score;
+		}
+
+		public int compare(Move m1, Move m2) {
+			return scoreMove(m2) - scoreMove(m1);
+		}
+	}
+
+	List<Move> orderMoves(Board b, List<Move> in, Move ttMove) {
+		MoveComparator mc = new MoveComparator(b, ttMove);
+
+		Collections.sort(in, mc);
+
+		return in;
 	}
 
 	Result search(Board b, short depth, short alpha, short beta, short maxDepth, Stats s, boolean isNullMove) {
@@ -404,7 +420,9 @@ class CaffeinatedPawn {
 
 				if (use && (!isRootPosition || te.m != null)) {
 					r.score = workScore;
-					r.m     = te.m;
+
+					r.pv = new LinkedList<Move>();
+					r.pv.add(te.m);
 
 					return r;
 				}
@@ -414,6 +432,8 @@ class CaffeinatedPawn {
 		int startAlpha = alpha;
 
 		r.score = -32767;
+
+		List<Move> bestPv = null;
 
 		boolean inCheck = b.isKingAttacked();
 		int nmReduceDepth = depth > 6 ? 4 : 3;
@@ -442,15 +462,13 @@ class CaffeinatedPawn {
 			}
 		}
 
-		List<MyMove> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove);
+		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove);
 
 		int lmrStart = !inCheck && depth >= 2 ? 4 : 999;
 
 		int nMovesTried = 0;
 
-		for(MyMove mmove : moves) {
-			Move move = mmove.getMove();
-
+		for(Move move : moves) {
 			if (b.isMoveLegal(move, false) == false)
 				continue;
 
@@ -496,7 +514,11 @@ class CaffeinatedPawn {
 
 			if (score > r.score) {
 				r.score = score;
-				r.m = move;
+
+				bestPv = child.pv;
+				if (bestPv == null)
+					bestPv = new LinkedList<Move>();
+				bestPv.add(0, move);
 
 				if (score > alpha) {
 					alpha = score;
@@ -521,7 +543,15 @@ class CaffeinatedPawn {
                 else if (r.score >= beta)
                         flag = ttFlag.LOWERBOUND;
 
-                tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? r.m : ttMove);
+		Move m = null;
+
+		if (bestPv != null) {
+			r.pv = bestPv;
+
+			m = bestPv.get(0);
+		}
+
+                tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? m : ttMove);
 
 		return r;
 	}
@@ -565,7 +595,7 @@ class CaffeinatedPawn {
 		short depth = 1;
 		while(!b.isMated() && to.get() == false) {
 			Result r = search(b, depth, alpha, beta, depth, s, false);
-			if (r == null || r.m == null)
+			if (r == null || r.pv == null)
 				break;
 
 			if (r.score <= alpha) {
@@ -599,7 +629,17 @@ class CaffeinatedPawn {
 
 				int nps = (int)(s.nodeCount * 1000 / timeDiff);
 
-				System.out.printf("info depth %d score cp %d time %d nodes %d nps %d pv %s\n", depth, r.score, timeDiff, s.nodeCount, nps, r.m);
+				String pv = null;
+				for(Move m : r.pv) {
+					if (pv == null)
+						pv = "";
+					else
+						pv += ' ';
+
+					pv += m;
+				}
+
+				System.out.printf("info depth %d score cp %d time %d nodes %d nps %d pv %s\n", depth, r.score, timeDiff, s.nodeCount, nps, pv);
 
 				chosen = r;
 
@@ -628,6 +668,12 @@ class CaffeinatedPawn {
 			}
 		}
 
+		if (chosen == null) {
+			chosen = new Result();
+			chosen.score = 0;
+			chosen.pv.add(b.legalMoves().get(0));
+		}
+
 		return chosen;
 	}
 
@@ -644,7 +690,7 @@ class CaffeinatedPawn {
 			short depth = 1;
 			while(!bLocal.isMated() && to.get() == false) {
 				Result r = search(bLocal, depth, alpha, beta, depth, s, false);
-				if (r == null || r.m == null)
+				if (r == null || r.pv == null)
 					break;
 
 				if (r.score <= alpha) {
@@ -803,11 +849,11 @@ class CaffeinatedPawn {
 
 				Result r = cp.doSearch(thinkTime, b);
 
-				if (r == null)
+				if (r == null || r.pv == null)
 					System.out.println("bestmove a1a1");
 				else {
 					System.out.print("bestmove ");
-					System.out.println(r.m);
+					System.out.println(r.pv.get(0));
 				}
 
 				cp.startPonder(b);

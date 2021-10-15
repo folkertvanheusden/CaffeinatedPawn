@@ -1,9 +1,11 @@
 package com.vanheusden.CaffeinatedPawn;
 
+import java.util.List;
+
 import com.github.bhlangonijr.chesslib.move.Move;
 
 class Result
 {
 	short score;
-	Move m;
+	List<Move> pv;
 }
