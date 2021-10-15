@@ -328,6 +328,9 @@ class CaffeinatedPawn {
 				r.score = evaluate(b);
 		}
 
+		if (bestPv != null)
+			r.pv = bestPv;
+
 		return r;
 	}
 
