@@ -165,17 +165,17 @@ class CaffeinatedPawn {
                                 score -= (short)scores[0][7 - blacky];  // TODO: endgame (1)
 		}
 
-		score += material[Side.WHITE.ordinal()][PieceType.QUEEN.ordinal()] * 900;
-		score -= material[Side.BLACK.ordinal()][PieceType.QUEEN.ordinal()] * 900;
+		score += material[Side.WHITE.ordinal()][PieceType.QUEEN.ordinal()] * 975;
+		score -= material[Side.BLACK.ordinal()][PieceType.QUEEN.ordinal()] * 975;
 
 		score += material[Side.WHITE.ordinal()][PieceType.ROOK.ordinal()] * 500;
 		score -= material[Side.BLACK.ordinal()][PieceType.ROOK.ordinal()] * 500;
 
-		score += material[Side.WHITE.ordinal()][PieceType.BISHOP.ordinal()] * 300;
-		score -= material[Side.BLACK.ordinal()][PieceType.BISHOP.ordinal()] * 300;
+		score += material[Side.WHITE.ordinal()][PieceType.BISHOP.ordinal()] * 325;
+		score -= material[Side.BLACK.ordinal()][PieceType.BISHOP.ordinal()] * 325;
 
-		score += material[Side.WHITE.ordinal()][PieceType.KNIGHT.ordinal()] * 300;
-		score -= material[Side.BLACK.ordinal()][PieceType.KNIGHT.ordinal()] * 300;
+		score += material[Side.WHITE.ordinal()][PieceType.KNIGHT.ordinal()] * 325;
+		score -= material[Side.BLACK.ordinal()][PieceType.KNIGHT.ordinal()] * 325;
 
 		score += material[Side.WHITE.ordinal()][PieceType.PAWN.ordinal()] * 100;
 		score -= material[Side.BLACK.ordinal()][PieceType.PAWN.ordinal()] * 100;
@@ -815,7 +815,7 @@ class CaffeinatedPawn {
 	                else if (line.equals("isready"))
                         	System.out.println("readyok");
 			else if (line.equals("quit") || line.equals("exit"))
-				break;
+				System.exit(0);
 			else {
 				System.out.println("# That (" + parts[0] + ") was not understood");
 			} 
