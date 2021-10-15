@@ -11,5 +11,5 @@ class TtElement
 	ttFlag f;
 	short age;
 	short depth;
-	Move m;
+	Move m;  // TODO replace by int to reduce pressure on garbage collector
 }

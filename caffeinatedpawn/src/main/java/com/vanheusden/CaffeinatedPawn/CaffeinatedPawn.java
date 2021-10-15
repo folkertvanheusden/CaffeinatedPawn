@@ -157,6 +157,7 @@ class CaffeinatedPawn {
 		}
 
 		r.score = -32767;
+		List<Move> bestPv = null;
 
 		boolean inCheck = b.isKingAttacked();
 
@@ -229,13 +230,10 @@ class CaffeinatedPawn {
 			if (score > r.score) {
 				r.score = score;
 
-				if (child != null)
-					r.pv = child.pv;
-
-				if (r.pv == null)
-					r.pv = new LinkedList<Move>();
-
-				r.pv.add(0, move);
+				bestPv = child.pv;
+				if (bestPv == null)
+					bestPv = new LinkedList<Move>();
+				bestPv.add(0, move);
 
 				if (score > alpha) {
 					alpha = score;
@@ -346,6 +344,8 @@ class CaffeinatedPawn {
 
 		r.score = -32767;
 
+		List<Move> bestPv = null;
+
 		boolean inCheck = b.isKingAttacked();
 		int nmReduceDepth = depth > 6 ? 4 : 3;
 		if (depth >= nmReduceDepth && !inCheck && !isRootPosition && !isNullMove) {
@@ -428,10 +428,10 @@ class CaffeinatedPawn {
 			if (score > r.score) {
 				r.score = score;
 
-				if (r.pv == null)
-					r.pv = new LinkedList<Move>();
-
-				r.pv.add(0, move);
+				bestPv = child.pv;
+				if (bestPv == null)
+					bestPv = new LinkedList<Move>();
+				bestPv.add(0, move);
 
 				if (score > alpha) {
 					alpha = score;
@@ -456,7 +456,14 @@ class CaffeinatedPawn {
                 else if (r.score >= beta)
                         flag = ttFlag.LOWERBOUND;
 
-		Move m = r.pv != null ? r.pv.get(0) : null;
+		Move m = null;
+
+		if (bestPv != null) {
+			r.pv = bestPv;
+
+			m = bestPv.get(0);
+		}
+
                 tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? m : ttMove);
 
 		return r;
