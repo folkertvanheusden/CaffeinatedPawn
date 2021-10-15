@@ -230,7 +230,7 @@ class CaffeinatedPawn {
 			return r;
 		}
 
-		if (b.isDraw() || b.isInsufficientMaterial() || b.isStaleMate()) {
+		if (b.isDraw() || b.isInsufficientMaterial() || b.isStaleMate() || b.isRepetition(1)) {
 			r.score = 0;
 			return r;
 		}
@@ -395,7 +395,7 @@ class CaffeinatedPawn {
 		if (depth == 0)
 			return quiescenceSearch(b, alpha, beta, (short)0, maxDepth, s);
 
-		if (b.isDraw() || b.isInsufficientMaterial() || b.isStaleMate()) {
+		if (b.isDraw() || b.isInsufficientMaterial() || b.isStaleMate() || b.isRepetition(1)) {
 			r.score = 0;
 			return r;
 		}
