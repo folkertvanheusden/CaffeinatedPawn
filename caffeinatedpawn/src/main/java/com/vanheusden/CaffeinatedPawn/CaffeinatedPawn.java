@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.lang.Math.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Date;
 import java.util.LinkedList;
@@ -182,13 +183,11 @@ class CaffeinatedPawn {
 				alpha = r.score;
 		}
 
-		List<MyMove> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null);
+		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null);
 
 		int nMovesTried = 0;
 
-		for(MyMove mmove : moves) {
-			Move move = mmove.getMove();
-
+		for(Move move : moves) {
 			if (b.isMoveLegal(move, false) == false)
 				continue;
 
@@ -254,37 +253,49 @@ class CaffeinatedPawn {
 		return r;
 	}
 
-	List<MyMove> orderMoves(Board b, final List<Move> in, Move ttMove) {
-		ArrayList<MyMove> work = new ArrayList<MyMove>();
-		work.ensureCapacity(in.size());
+	class MoveComparator implements Comparator<Move> {
+		Board b;
+		Move ttMove;
 
-		for(Move move : in) {
-			int score = 0;
-
-			if (move.equals(ttMove))
-				score = 10000;
-			else {
-				PieceType attacker = b.getPiece(move.getFrom()).getPieceType();
-				int victimValue = 0;
-
-				if (attacker == PieceType.PAWN && !move.getFrom().getFile().equals(move.getTo().getFile()))  // en-passant
-					victimValue = 100;
-				else if (Piece.NONE.equals(b.getPiece(move.getTo())) == false)
-					victimValue = evalPieceType(b.getPiece(move.getTo()).getPieceType());
-
-				score += victimValue - evalPieceType(attacker);
-
-				PieceType promoPieceType = move.getPromotion().getPieceType();
-				if (promoPieceType != null)
-					score += evalPieceType(promoPieceType);
-			}
-
-			work.add(new MyMove(move, score));
+		MoveComparator(Board bIn, Move ttMoveIn) {
+			b = bIn;
+			ttMove = ttMoveIn;
 		}
 
-		Collections.sort(work);
+		int scoreMove(Move move) {
+			if (move.equals(ttMove))
+				return 10000;
 
-		return work;
+			int score = 0;
+
+			PieceType attacker = b.getPiece(move.getFrom()).getPieceType();
+			int victimValue = 0;
+
+			if (attacker == PieceType.PAWN && !move.getFrom().getFile().equals(move.getTo().getFile()))  // en-passant
+				victimValue = 100;
+			else if (Piece.NONE.equals(b.getPiece(move.getTo())) == false)
+				victimValue = evalPieceType(b.getPiece(move.getTo()).getPieceType());
+
+			score += victimValue - evalPieceType(attacker);
+
+			PieceType promoPieceType = move.getPromotion().getPieceType();
+			if (promoPieceType != null)
+				score += evalPieceType(promoPieceType);
+
+			return score;
+		}
+
+		public int compare(Move m1, Move m2) {
+			return scoreMove(m2) - scoreMove(m1);
+		}
+	}
+
+	List<Move> orderMoves(Board b, List<Move> in, Move ttMove) {
+		MoveComparator mc = new MoveComparator(b, ttMove);
+
+		Collections.sort(in, mc);
+
+		return in;
 	}
 
 	Result search(Board b, short depth, short alpha, short beta, short maxDepth, Stats s, boolean isNullMove) {
@@ -373,15 +384,13 @@ class CaffeinatedPawn {
 			}
 		}
 
-		List<MyMove> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove);
+		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove);
 
 		int lmrStart = !inCheck && depth >= 2 ? 4 : 999;
 
 		int nMovesTried = 0;
 
-		for(MyMove mmove : moves) {
-			Move move = mmove.getMove();
-
+		for(Move move : moves) {
 			if (b.isMoveLegal(move, false) == false)
 				continue;
 
