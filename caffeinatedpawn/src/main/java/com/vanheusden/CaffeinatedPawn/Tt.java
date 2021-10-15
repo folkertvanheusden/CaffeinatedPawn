@@ -5,7 +5,7 @@ import java.lang.Math.*;
 
 class Tt
 {
-	final int n_entries = 4194304, slots = 8;
+	final int n_entries = 2097152, slots = 8;
 	TtElement elements[][] = new TtElement[n_entries][slots];
 	short age = 0;
 
