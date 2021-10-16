@@ -79,6 +79,8 @@ class CaffeinatedPawn {
 
 		int n_pawn[][] = { { 0, 0, 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0 } };
 
+		int n_rook[][] = { { 0, 0, 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0 } };
+
 		int whiteYmax[] = { -1, -1, -1, -1, -1, -1, -1, -1 };
 		int blackYmin[] = { 8, 8, 8, 8, 8, 8, 8, 8 };
 
@@ -112,6 +114,18 @@ class CaffeinatedPawn {
 					else
 						blackYmin[x] = Math.min(blackYmin[x], y);  // y
 				}
+				else if (pt == PieceType.ROOK) {
+					int x = sq.getFile().ordinal();
+					int y = sq.getRank().ordinal();
+
+					n_rook[sNr][x]++;
+
+					// rook on end ranks
+					if ((y == 0 || y == 1) && s == Side.BLACK)
+						score -= 10;
+					else if ((y == 6 || y == 7) && s == Side.WHITE)
+						score += 10;
+				}
 			}
 		}
 
@@ -134,11 +148,21 @@ class CaffeinatedPawn {
 			score += (n_pawn[Side.BLACK.ordinal()][x] > 0 && anyBlackPawnsLeft == false && anyBlackPawnsRight == false) ? 10 : 0;
 		}
 
+		// rooks on open file (good)
+		for(int x=0; x<8; x++) {
+			if (n_pawn[Side.WHITE.ordinal()][x] == 0 && n_rook[Side.WHITE.ordinal()][x] > 0)
+				score += 15;
+
+			if (n_pawn[Side.BLACK.ordinal()][x] == 0 && n_rook[Side.BLACK.ordinal()][x] > 0)
+				score -= 15;
+		}
+
+		// passed pawns
+		//
 		// these values where suggested by mkchan (irc) and are from
 		// stockfish
 		final int scores[][] = { { 0, 5, 20, 30, 40, 50, 80, 0 }, { 0, 5, 20, 40, 70, 120, 200, 0 } };
 
-		// passed pawns
 		List<Square> whitePawnSquares = b.getPieceLocation(Piece.WHITE_PAWN);
 		for(Square sq : whitePawnSquares) {
 			int whitex = sq.getFile().ordinal();
