@@ -323,7 +323,7 @@ class CaffeinatedPawn {
 
 		if (nMovesTried == 0) {
 			if (inCheck)
-				r.score = (short)(-10000 + maxDepth + qsDepth);
+				r.score = (short)(-10000 + qsDepth);
 			else if (r.score == -32767)
 				r.score = evaluate(b);
 		}
