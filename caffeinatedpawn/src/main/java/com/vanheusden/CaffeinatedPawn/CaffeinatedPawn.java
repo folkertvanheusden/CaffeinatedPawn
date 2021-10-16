@@ -315,8 +315,11 @@ class CaffeinatedPawn {
 				if (score > alpha) {
 					alpha = score;
 
-					if (score >= beta)
+					if (score >= beta) {
+						s.qsBcoCount++;
+						s.qsBcoIndex += nMovesTried;
 						break;
+					}
 				}
 			}
 		}
@@ -327,9 +330,9 @@ class CaffeinatedPawn {
 			else if (r.score == -32767)
 				r.score = evaluate(b);
 		}
-
-		if (bestPv != null)
+		else if (bestPv != null) {
 			r.pv = bestPv;
+		}
 
 		return r;
 	}
@@ -441,6 +444,8 @@ class CaffeinatedPawn {
 		boolean inCheck = b.isKingAttacked();
 		int nmReduceDepth = depth > 6 ? 4 : 3;
 		if (depth >= nmReduceDepth && !inCheck && !isRootPosition && !isNullMove) {
+			s.nmCount++;
+
 			b.doNullMove();
 
 			Result nm = search(b, (short)(depth - nmReduceDepth), (short)-beta, (short)(-beta + 1), maxDepth, s, true);
@@ -453,6 +458,8 @@ class CaffeinatedPawn {
 			int nmscore = -nm.score;
 
 			if (nmscore >= beta) {
+				s.nmVerifyCount++;
+
 				Result verification = search(b, (short)(depth - nmReduceDepth), (short)(beta - 1), (short)beta, maxDepth, s, false);
 
 				if (verification == null)
@@ -484,6 +491,8 @@ class CaffeinatedPawn {
 				child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, isNullMove);
 			}
 			else {
+				s.lmrCount++;
+
 				boolean isLMR = false;
 
 				short newDepth = (short)(depth - 1);
@@ -501,8 +510,10 @@ class CaffeinatedPawn {
 				if (!checkAfterMove)
 					child = search(b, (short)newDepth, (short)-beta, (short)-alpha, maxDepth, s, isNullMove);
 
-				if (checkAfterMove || (child != null && isLMR && -child.score > alpha))
+				if (checkAfterMove || (child != null && isLMR && -child.score > alpha)) {
+					s.lmrFullCount++;
 					child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, isNullMove);
+				}
 			}
 
 			if (child == null) {
@@ -526,17 +537,22 @@ class CaffeinatedPawn {
 				if (score > alpha) {
 					alpha = score;
 
-					if (score >= beta)
+					if (score >= beta) {
+						s.bcoCount++;
+						s.bcoIndex += nMovesTried;
 						break;
+					}
 				}
 			}
 		}
 
 		if (nMovesTried == 0) {
-			if (inCheck)
-				r.score = (short)(-10000 + maxDepth - depth);
-			else
+			if (inCheck) { System.out.println("hier");
+				r.score = (short)(-10000 + maxDepth - depth); }
+			else if (r.score == -32767)
 				r.score = 0;
+			else
+				System.out.println("search err");
 		}
 
                 ttFlag flag = ttFlag.EXACT;
@@ -654,6 +670,17 @@ class CaffeinatedPawn {
 		}
 
 		System.out.printf("# QS: %.2f%%\n", s.qsNodeCount * 100.0 / s.nodeCount);
+
+		if (s.bcoCount > 0)
+			System.out.printf("# avg bco index: %.2f\n", s.bcoIndex / (double)s.bcoCount);
+		if (s.qsBcoCount > 0)
+			System.out.printf("# avg qs bco index: %.2f\n", s.qsBcoIndex / (double)s.qsBcoCount);
+
+		if (s.nmCount > 0)
+			System.out.printf("# null move verify: %.2f%%\n", s.nmVerifyCount * 100.0 / s.nmCount);
+
+		if (s.lmrCount > 0)
+			System.out.printf("# LMR full search: %.2f%%\n", s.lmrFullCount * 100.0 / s.lmrCount);
 
 		try {
 			toThread.interrupt();
