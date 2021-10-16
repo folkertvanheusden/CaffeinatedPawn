@@ -8,8 +8,10 @@ import com.github.bhlangonijr.chesslib.PieceType;
 import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.Square;
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.Math.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -725,14 +727,18 @@ class CaffeinatedPawn {
 		if (chosen == null) {
 			chosen = new Result();
 			chosen.score = 0;
+			chosen.pv = new LinkedList<Move>();
 			chosen.pv.add(b.legalMoves().get(0));
 		}
 
 		return chosen;
 	}
 
-	public void startPonder(Board bIn) {
+	public void startPonder(Board bIn, Move m) {
 		Board bLocal = bIn.clone();
+
+		if (m != null)
+			bLocal.doMove(m);
 
 		to.set(false);
 
@@ -901,16 +907,31 @@ class CaffeinatedPawn {
 
 				System.out.printf("# think time: %d\n", thinkTime);
 
-				Result r = cp.doSearch(thinkTime, b);
+				try {
+					Result r = cp.doSearch(thinkTime, b);
 
-				if (r == null || r.pv == null)
-					System.out.println("bestmove a1a1");
-				else {
-					System.out.print("bestmove ");
-					System.out.println(r.pv.get(0));
+					if (r == null || r.pv == null) {
+						System.out.println("bestmove a1a1");
+						cp.startPonder(b, null);
+					}
+					else {
+						System.out.print("bestmove ");
+						System.out.println(r.pv.get(0));
+						cp.startPonder(b, r.pv.get(0));
+					}
 				}
+				catch(Exception e) {
+					System.err.println(e);
 
-				cp.startPonder(b);
+					try {
+						PrintWriter out = new PrintWriter(new FileOutputStream("cafpawn-err.txt"), true);
+						out.println(e);
+						out.close();
+					}
+					catch(Exception e2) {
+						System.err.println(e2);
+					}
+				}
 			}
 	                else if (line.equals("isready"))
                         	System.out.println("readyok");
