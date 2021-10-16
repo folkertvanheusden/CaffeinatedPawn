@@ -226,7 +226,7 @@ class CaffeinatedPawn {
 		Result r = new Result();
 
 		if (b.isMated()) {
-			r.score = (short)(-10000 + qsDepth);
+			r.score = (short)(-10000 + qsDepth + maxDepth);
 			return r;
 		}
 
@@ -323,7 +323,7 @@ class CaffeinatedPawn {
 
 		if (nMovesTried == 0) {
 			if (inCheck)
-				r.score = (short)(-10000 + qsDepth);
+				r.score = (short)(-10000 + qsDepth + maxDepth);
 			else if (r.score == -32767)
 				r.score = evaluate(b);
 		}
