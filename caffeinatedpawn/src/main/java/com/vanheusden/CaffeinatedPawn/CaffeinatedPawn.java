@@ -226,7 +226,7 @@ class CaffeinatedPawn {
 		Result r = new Result();
 
 		if (b.isMated()) {
-			r.score = -9999;
+			r.score = (short)(-10000 + qsDepth);
 			return r;
 		}
 
@@ -388,7 +388,7 @@ class CaffeinatedPawn {
 		Result r = new Result();
 
 		if (b.isMated()) {
-			r.score = -9999;
+			r.score = (short)(-10000 + maxDepth - depth);
 			return r;
 		}
 
