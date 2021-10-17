@@ -439,6 +439,8 @@ class CaffeinatedPawn {
 
 		boolean isRootPosition = maxDepth == depth;
 
+		s.ttInvoked++;
+
 		Move ttMove = null;  // used later on for sorting
 		TtElement te = tt.lookup(b.hashCode());
 		if (te != null && isValidMove(b, te.m)) {
@@ -715,8 +717,8 @@ class CaffeinatedPawn {
 
 		System.out.printf("# NM: %.2f%%\n", s.nullMoveNodeCount * 100.0 / s.nodeCount);
 
-		System.out.printf("# tt hit: %.2f%%\n", s.ttHit * 100.0 / s.nodeCount);
-		System.out.printf("# tt hit good: %.2f%%\n", s.ttHitGood * 100.0 / s.nodeCount);
+		System.out.printf("# tt hit: %.2f%%\n", s.ttHit * 100.0 / s.ttInvoked);
+		System.out.printf("# tt hit good: %.2f%%\n", s.ttHitGood * 100.0 / s.ttInvoked);
 
 		if (s.bcoCount > 0)
 			System.out.printf("# avg bco index: %.2f\n", s.bcoIndex / (double)s.bcoCount);

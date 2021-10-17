@@ -12,7 +12,7 @@ class Stats
 
 	long lmrCount, lmrFullCount;
 
-	long ttHit, ttHitGood;
+	long ttInvoked, ttHit, ttHitGood;
 
 	long nullMoveNodeCount;
 
@@ -27,7 +27,7 @@ class Stats
 
 		lmrCount = lmrFullCount = 0;
 
-		ttHit = ttHitGood = 0;
+		ttInvoked = ttHit = ttHitGood = 0;
 
 		nullMoveNodeCount = 0;
 	}
