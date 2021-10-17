@@ -285,7 +285,8 @@ class CaffeinatedPawn {
 				alpha = r.score;
 		}
 
-		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null);
+		// TODO tt toch queryen?
+		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null, null);
 
 		int nMovesTried = 0;
 
@@ -363,16 +364,20 @@ class CaffeinatedPawn {
 
 	class MoveComparator implements Comparator<Move> {
 		Board b;
-		Move ttMove;
+		Move ttMove, sibling;
 
-		MoveComparator(Board bIn, Move ttMoveIn) {
+		MoveComparator(Board bIn, Move ttMoveIn, Move siblingIn) {
 			b = bIn;
 			ttMove = ttMoveIn;
+			sibling = siblingIn;
 		}
 
 		int scoreMove(Move move) {
 			if (move.equals(ttMove))
 				return 10000;
+
+			if (move.equals(sibling))
+				return 9999;
 
 			int score = 0;
 
@@ -398,15 +403,15 @@ class CaffeinatedPawn {
 		}
 	}
 
-	List<Move> orderMoves(Board b, List<Move> in, Move ttMove) {
-		MoveComparator mc = new MoveComparator(b, ttMove);
+	List<Move> orderMoves(Board b, List<Move> in, Move ttMove, Move sibling) {
+		MoveComparator mc = new MoveComparator(b, ttMove, sibling);
 
 		Collections.sort(in, mc);
 
 		return in;
 	}
 
-	Result search(Board b, short depth, short alpha, short beta, short maxDepth, Stats s, boolean isNullMove) {
+	Result search(Board b, short depth, short alpha, short beta, short maxDepth, Stats s, boolean isNullMove, Move sibling) {
 		if (to.get())
 			return null;
 
@@ -432,9 +437,13 @@ class CaffeinatedPawn {
 		Move ttMove = null;  // used later on for sorting
 		TtElement te = tt.lookup(b.hashCode());
 		if (te != null && isValidMove(b, te.m)) {
+			s.ttHit++;
+
 			ttMove = te.m;
 
 			if (te.depth >= depth) {
+				s.ttHitGood++;
+
 				boolean use = false;
 
 				short csd = (short)(maxDepth - depth);
@@ -472,7 +481,7 @@ class CaffeinatedPawn {
 
 			b.doNullMove();
 
-			Result nm = search(b, (short)(depth - nmReduceDepth), (short)-beta, (short)(-beta + 1), maxDepth, s, true);
+			Result nm = search(b, (short)(depth - nmReduceDepth), (short)-beta, (short)(-beta + 1), maxDepth, s, true, null);
 
 			b.undoMove();
 
@@ -484,7 +493,7 @@ class CaffeinatedPawn {
 			if (nmscore >= beta) {
 				s.nmVerifyCount++;
 
-				Result verification = search(b, (short)(depth - nmReduceDepth), (short)(beta - 1), (short)beta, maxDepth, s, false);
+				Result verification = search(b, (short)(depth - nmReduceDepth), (short)(beta - 1), (short)beta, maxDepth, s, false, null);
 
 				if (verification == null)
 					return null;
@@ -496,11 +505,13 @@ class CaffeinatedPawn {
 			}
 		}
 
-		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove);
+		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove, sibling);
 
 		int lmrStart = !inCheck && depth >= 2 ? 4 : 999;
 
 		int nMovesTried = 0;
+
+		Move childSibling = null;
 
 		for(Move move : moves) {
 			if (b.isMoveLegal(move, false) == false)
@@ -512,7 +523,7 @@ class CaffeinatedPawn {
 			Result child = null;
 
 			if (inCheck) {
-				child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, isNullMove);
+				child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, isNullMove, childSibling);
 			}
 			else {
 				s.lmrCount++;
@@ -532,11 +543,11 @@ class CaffeinatedPawn {
 				boolean checkAfterMove = b.isKingAttacked();
 
 				if (!checkAfterMove)
-					child = search(b, (short)newDepth, (short)-beta, (short)-alpha, maxDepth, s, isNullMove);
+					child = search(b, (short)newDepth, (short)-beta, (short)-alpha, maxDepth, s, isNullMove, sibling);
 
 				if (checkAfterMove || (child != null && isLMR && -child.score > alpha)) {
 					s.lmrFullCount++;
-					child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, isNullMove);
+					child = search(b, (short)(depth - 1), (short)-beta, (short)-alpha, maxDepth, s, isNullMove, sibling);
 				}
 			}
 
@@ -557,6 +568,8 @@ class CaffeinatedPawn {
 				if (bestPv == null)
 					bestPv = new LinkedList<Move>();
 				bestPv.add(0, move);
+
+				childSibling = bestPv.get(0);
 
 				if (score > alpha) {
 					alpha = score;
@@ -618,7 +631,7 @@ class CaffeinatedPawn {
 
 				short depth = 2;
 				while(!bLocal.isMated() && to.get() == false) {
-					search(bLocal, depth, (short)-32767, (short)32767, depth, s, false);
+					search(bLocal, depth, (short)-32767, (short)32767, depth, s, false, null);
 
 					depth++;
 				}
@@ -635,7 +648,7 @@ class CaffeinatedPawn {
 		short add_alpha = 75, add_beta = 75;
 		short depth = 1;
 		while(!b.isMated() && to.get() == false) {
-			Result r = search(b, depth, alpha, beta, depth, s, false);
+			Result r = search(b, depth, alpha, beta, depth, s, false, null);
 			if (r == null || r.pv == null)
 				break;
 
@@ -690,6 +703,9 @@ class CaffeinatedPawn {
 		}
 
 		System.out.printf("# QS: %.2f%%\n", s.qsNodeCount * 100.0 / s.nodeCount);
+
+		System.out.printf("# tt hit: %.2f%%\n", s.ttHit * 100.0 / s.nodeCount);
+		System.out.printf("# tt hit good: %.2f%%\n", s.ttHitGood * 100.0 / s.nodeCount);
 
 		if (s.bcoCount > 0)
 			System.out.printf("# avg bco index: %.2f\n", s.bcoIndex / (double)s.bcoCount);
@@ -752,7 +768,7 @@ class CaffeinatedPawn {
 			short add_alpha = 75, add_beta = 75;
 			short depth = 1;
 			while(!bLocal.isMated() && to.get() == false) {
-				Result r = search(bLocal, depth, alpha, beta, depth, s, false);
+				Result r = search(bLocal, depth, alpha, beta, depth, s, false, null);
 				if (r == null || r.pv == null)
 					break;
 

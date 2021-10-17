@@ -12,6 +12,8 @@ class Stats
 
 	long lmrCount, lmrFullCount;
 
+	long ttHit, ttHitGood;
+
 	Stats() {
 		deepestDepth = 0;
 		nodeCount = 0;
@@ -22,5 +24,7 @@ class Stats
 		nmCount = nmVerifyCount = 0;
 
 		lmrCount = lmrFullCount = 0;
+
+		ttHit = ttHitGood = 0;
 	}
 }
