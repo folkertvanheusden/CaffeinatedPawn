@@ -643,6 +643,12 @@ class CaffeinatedPawn {
 			if (r == null || r.pv == null)
 				break;
 
+			long now = new Date().getTime();
+
+			long timeDiff = now - start;
+			if (timeDiff == 0)
+				timeDiff = 1;
+
 			if (r.score <= alpha) {
 				beta = (short)((alpha + beta) / 2);
 				alpha = (short)(r.score - add_alpha);
@@ -665,12 +671,6 @@ class CaffeinatedPawn {
 				beta = (short)(r.score + add_beta);
 				if (beta > 10000)
 					beta = 10000;
-
-				long now = new Date().getTime();
-
-				long timeDiff = now - start;
-				if (timeDiff == 0)
-					timeDiff = 1;
 
 				int nps = (int)(s.nodeCount * 1000 / timeDiff);
 
@@ -754,7 +754,6 @@ class CaffeinatedPawn {
 
 		ponderThread = new Thread(() -> {
 			Stats s = new Stats();
-			Result chosen = null;
 			short alpha = -32768, beta = 32767;
 			short add_alpha = 75, add_beta = 75;
 			short depth = 1;
@@ -832,9 +831,14 @@ class CaffeinatedPawn {
 				System.out.println("id author Folkert van Heusden");
 				System.out.println("uciok");
 			}
-			else if (line.equals("ucinewgame"))
+			else if (line.equals("ucinewgame")) {
+				cp.stopPonder();
+
 				b = new Board();
+			}
 			else if (parts[0].equals("position")) {
+				cp.stopPonder();
+
 				boolean moves = false;
 				Side side = Side.WHITE;
 
