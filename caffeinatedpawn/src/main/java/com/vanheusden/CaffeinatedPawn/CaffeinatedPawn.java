@@ -573,12 +573,10 @@ class CaffeinatedPawn {
 		}
 
 		if (nMovesTried == 0) {
-			if (inCheck) { System.out.println("hier");
-				r.score = (short)(-10000 + maxDepth - depth); }
+			if (inCheck)
+				r.score = (short)(-10000 + maxDepth - depth);
 			else if (r.score == -32767)
 				r.score = 0;
-			else
-				System.out.println("search err");
 		}
 
                 ttFlag flag = ttFlag.EXACT;
