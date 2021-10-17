@@ -110,4 +110,17 @@ class Tt
 
 		elements[index][useSubIndex] = e;
 	}
+
+	int hashFullPermil() {
+		int p = 0;
+
+		for(int k=0; k<1000/slots; k++) {
+			for(int i=0; i<slots; i++) {
+				if (elements[k][i].m != null)
+					p++;
+			}
+		}
+
+		return p;
+	}
 }

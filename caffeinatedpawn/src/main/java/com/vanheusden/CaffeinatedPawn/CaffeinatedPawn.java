@@ -562,15 +562,12 @@ class CaffeinatedPawn {
 				}
 			}
 
-			if (child == null) {
-				b.undoMove();
+			b.undoMove();
 
+			if (child == null)
 				return null;
-			}
 
 			short score = (short)-child.score;
-
-			b.undoMove();
 
 			if (score > r.score) {
 				r.score = score;
@@ -702,7 +699,7 @@ class CaffeinatedPawn {
 					pv += m;
 				}
 
-				System.out.printf("info depth %d score cp %d time %d nodes %d nps %d pv %s\n", depth, r.score, timeDiff, s.nodeCount + s.qsNodeCount, nps, pv);
+				System.out.printf("info depth %d score cp %d hashfull %d time %d nodes %d nps %d pv %s\n", depth, r.score, tt.hashFullPermil(), timeDiff, s.nodeCount + s.qsNodeCount, nps, pv);
 
 				chosen = r;
 
@@ -717,17 +714,19 @@ class CaffeinatedPawn {
 
 		System.out.printf("# NM: %.2f%%\n", s.nullMoveNodeCount * 100.0 / s.nodeCount);
 
-		System.out.printf("# tt hit: %.2f%%\n", s.ttHit * 100.0 / s.ttInvoked);
-		System.out.printf("# tt hit good: %.2f%%\n", s.ttHitGood * 100.0 / s.ttInvoked);
+		System.out.printf("# tt invoked: %d (%.2f%%)\n", s.ttInvoked, s.ttInvoked * 100.0 / s.nodeCount);
+		System.out.printf("# tt hit: %.2f%%, hit good: %.2f%%\n", s.ttHit * 100.0 / s.ttInvoked, s.ttHitGood * 100.0 / s.ttInvoked);
 
 		if (s.bcoCount > 0)
 			System.out.printf("# avg bco index: %.2f\n", s.bcoIndex / (double)s.bcoCount);
 		if (s.qsBcoCount > 0)
 			System.out.printf("# avg qs bco index: %.2f\n", s.qsBcoIndex / (double)s.qsBcoCount);
 
+		System.out.printf("# null moves: %d (%.2f%%)\n", s.nmCount, s.nmCount * 100.0 / s.nodeCount);
 		if (s.nmCount > 0)
 			System.out.printf("# null move verify: %.2f%%\n", s.nmVerifyCount * 100.0 / s.nmCount);
 
+		System.out.printf("# LMRs: %d (%.2f%%)\n", s.lmrCount, s.lmrCount * 100.0 / s.nodeCount);
 		if (s.lmrCount > 0)
 			System.out.printf("# LMR full search: %.2f%%\n", s.lmrFullCount * 100.0 / s.lmrCount);
 
