@@ -215,6 +215,7 @@ class CaffeinatedPawn {
 		return score;
 	}
 
+	// for tt validation
 	boolean isValidMove(Board b, Move m) {
 		Piece fromPiece = b.getPiece(m.getFrom());
 		if (Piece.NONE.equals(fromPiece))
@@ -224,10 +225,7 @@ class CaffeinatedPawn {
 	}
 
 	boolean underAttackByOpponent(Board b, Square to) {
-		List<Square> squares = new ArrayList<Square>();
-		squares.add(to);
-
-		return b.isSquareAttackedBy(squares, b.getSideToMove().flip());
+		return b.squareAttackedBy(to, b.getSideToMove().flip()) != 0;
 	}
 
 	boolean isCaptureMove(Board b, Move move) {
