@@ -601,7 +601,7 @@ class CaffeinatedPawn {
 		return r;
 	}
 
-	Result doSearch(int maxThinkTime, Board b) {
+	Result iterativeDeepening(int maxThinkTime, Board b) {
 		long start = new Date().getTime();
 
 		to.set(false);
@@ -918,7 +918,7 @@ class CaffeinatedPawn {
 				System.out.printf("# think time: %d\n", thinkTime);
 
 				try {
-					Result r = cp.doSearch(thinkTime, b);
+					Result r = cp.iterativeDeepening(thinkTime, b);
 
 					if (r == null || r.pv == null) {
 						System.out.println("bestmove a1a1");
