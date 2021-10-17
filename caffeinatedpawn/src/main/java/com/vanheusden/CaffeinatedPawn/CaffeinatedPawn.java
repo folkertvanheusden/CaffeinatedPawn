@@ -645,9 +645,7 @@ class CaffeinatedPawn {
 
 			long now = new Date().getTime();
 
-			long timeDiff = now - start;
-			if (timeDiff == 0)
-				timeDiff = 1;
+			long timeDiff = Math.max(1, now - start);
 
 			if (r.score <= alpha) {
 				beta = (short)((alpha + beta) / 2);
