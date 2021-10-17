@@ -729,6 +729,8 @@ class CaffeinatedPawn {
 		if (s.lmrCount > 0)
 			System.out.printf("# LMR full search: %.2f%%\n", s.lmrFullCount * 100.0 / s.lmrCount);
 
+		tt.dumpStats();
+
 		try {
 			toThread.interrupt();
 			toThread.join();
@@ -855,6 +857,7 @@ class CaffeinatedPawn {
 			else if (line.equals("ucinewgame")) {
 				cp.stopPonder();
 
+				cp.tt.restartStats();
 				b = new Board();
 			}
 			else if (parts[0].equals("position")) {

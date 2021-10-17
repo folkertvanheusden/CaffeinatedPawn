@@ -8,6 +8,7 @@ class Tt
 	final int n_entries = 2097152, slots = 8;
 	TtElement elements[][] = new TtElement[n_entries][slots];
 	short age = 0;
+	TtStats ts = new TtStats();
 
 	Tt() {
 		for(int entry=0; entry<n_entries; entry++) {
@@ -21,12 +22,32 @@ class Tt
 		age++;
 	}
 
+	void restartStats() {
+		ts = new TtStats();
+	}
+
+	void dumpStats() {
+		System.out.printf("# tt lookups: %d, hits: %.2f%%\n", ts.lookups, ts.lookupHits * 100.0 / ts.lookups);
+
+		System.out.printf("# tt stores: %d, skipDepth: %.2f%%, skipFlag: %.2f%%, skipBest: %.2f%%, minDepth: %.2f%%, age: %.2f%%\n",
+				ts.stores,
+				ts.storesSkipDepth * 100.0 / ts.stores,
+				ts.storesSkipFlag * 100.0 / ts.stores,
+				ts.storesSkipBest * 100.0 / ts.stores,
+				ts.storeMinDepth * 100.0 / ts.stores,
+				ts.storeAge * 100.0 / ts.stores);
+	}
+
 	TtElement lookup(long hash) {
-	        int index = (int)Math.abs(hash % n_entries);
+	        int index = (int)(hash & (n_entries - 1));
+		
+		ts.lookups++;
 
 		for(int i=0; i<slots; i++) {
 			if (elements[index][i].hash == hash) {
 				elements[index][i].age = age;
+
+				ts.lookupHits++;
 
 				return elements[index][i];
 			}
@@ -36,7 +57,9 @@ class Tt
         }
 
 	void store(long hash, ttFlag f, short depth, short score, Move m) {
-	        int index = (int)Math.abs(hash % n_entries);
+	        int index = (int)(hash & (n_entries - 1));
+
+		ts.stores++;
 
 		int useSubIndex = -1, minDepth = 999, mdi = -1;
 
@@ -44,15 +67,19 @@ class Tt
 			if (elements[index][i].hash == hash) {
 				if (elements[index][i].depth > depth) {
 					elements[index][i].age = age;
+					ts.storesSkipDepth++;
 					return;
 				}
 
 				if (f != ttFlag.EXACT && elements[index][i].depth == depth) {
+					ts.storesSkipFlag++;
 					elements[index][i].age = age;
 					return;
 				}
 
 				useSubIndex = i;
+
+				ts.storesSkipBest++;
 
 				break;
 			}
@@ -65,8 +92,13 @@ class Tt
 			}
 		}
 
-		if (useSubIndex == -1)
+		if (useSubIndex == -1) {
 			useSubIndex = mdi;
+			ts.storeMinDepth++;
+		}
+		else {
+			ts.storeAge++;
+		}
 
 		TtElement e = new TtElement();
 		e.hash  = hash;
