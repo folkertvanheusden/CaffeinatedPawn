@@ -728,7 +728,17 @@ class CaffeinatedPawn {
 			chosen = new Result();
 			chosen.score = 0;
 			chosen.pv = new LinkedList<Move>();
-			chosen.pv.add(b.legalMoves().get(0));
+
+			TtElement te = tt.lookup(b.hashCode());
+			if (te != null && isValidMove(b, te.m)) {
+				chosen.pv.add(te.m);
+				chosen.score = te.score;
+				System.out.println("# no move calculated but did have a valid move stored in tt");
+			}
+			else {
+				System.out.println("# no move calculated: picked a random one");
+				chosen.pv.add(b.legalMoves().get(0));
+			}
 		}
 
 		return chosen;
