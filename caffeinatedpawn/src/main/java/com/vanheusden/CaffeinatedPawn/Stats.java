@@ -14,6 +14,8 @@ class Stats
 
 	long ttHit, ttHitGood;
 
+	long nullMoveNodeCount;
+
 	Stats() {
 		deepestDepth = 0;
 		nodeCount = 0;
@@ -26,5 +28,7 @@ class Stats
 		lmrCount = lmrFullCount = 0;
 
 		ttHit = ttHitGood = 0;
+
+		nullMoveNodeCount = 0;
 	}
 }

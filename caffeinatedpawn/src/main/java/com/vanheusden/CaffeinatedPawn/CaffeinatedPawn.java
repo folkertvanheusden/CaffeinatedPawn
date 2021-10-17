@@ -244,7 +244,6 @@ class CaffeinatedPawn {
 		if (to.get())
 			return null;
 
-		s.nodeCount++;
 		s.qsNodeCount++;
 
 		Result r = new Result();
@@ -285,7 +284,6 @@ class CaffeinatedPawn {
 				alpha = r.score;
 		}
 
-		// TODO tt toch queryen?
 		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null, null, null);
 
 		int nMovesTried = 0;
@@ -420,6 +418,9 @@ class CaffeinatedPawn {
 			return null;
 
 		s.nodeCount++;
+
+		if (isNullMove)
+			s.nullMoveNodeCount++;
 
 		Result r = new Result();
 
@@ -710,7 +711,9 @@ class CaffeinatedPawn {
 				break;
 		}
 
-		System.out.printf("# QS: %.2f%%\n", s.qsNodeCount * 100.0 / s.nodeCount);
+		System.out.printf("# QS: %.2f%%\n", s.qsNodeCount * 100.0 / (s.nodeCount + s.qsNodeCount));
+
+		System.out.printf("# NM: %.2f%%\n", s.nullMoveNodeCount * 100.0 / s.nodeCount);
 
 		System.out.printf("# tt hit: %.2f%%\n", s.ttHit * 100.0 / s.nodeCount);
 		System.out.printf("# tt hit good: %.2f%%\n", s.ttHitGood * 100.0 / s.nodeCount);
