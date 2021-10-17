@@ -700,7 +700,7 @@ class CaffeinatedPawn {
 					pv += m;
 				}
 
-				System.out.printf("info depth %d score cp %d time %d nodes %d nps %d pv %s\n", depth, r.score, timeDiff, s.nodeCount, nps, pv);
+				System.out.printf("info depth %d score cp %d time %d nodes %d nps %d pv %s\n", depth, r.score, timeDiff, s.nodeCount + s.qsNodeCount, nps, pv);
 
 				chosen = r;
 
