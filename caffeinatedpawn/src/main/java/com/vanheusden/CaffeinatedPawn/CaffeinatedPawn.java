@@ -286,7 +286,7 @@ class CaffeinatedPawn {
 		}
 
 		// TODO tt toch queryen?
-		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null, null);
+		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null, null, null);
 
 		int nMovesTried = 0;
 
@@ -364,12 +364,13 @@ class CaffeinatedPawn {
 
 	class MoveComparator implements Comparator<Move> {
 		Board b;
-		Move ttMove, sibling;
+		Move ttMove, sibling, nmMove;
 
-		MoveComparator(Board bIn, Move ttMoveIn, Move siblingIn) {
+		MoveComparator(Board bIn, Move ttMoveIn, Move siblingIn, Move nmMoveIn) {
 			b = bIn;
 			ttMove = ttMoveIn;
 			sibling = siblingIn;
+			nmMove = nmMoveIn;
 		}
 
 		int scoreMove(Move move) {
@@ -378,6 +379,9 @@ class CaffeinatedPawn {
 
 			if (move.equals(sibling))
 				return 9999;
+
+			if (move.equals(nmMove))
+				return 9998;
 
 			int score = 0;
 
@@ -403,8 +407,8 @@ class CaffeinatedPawn {
 		}
 	}
 
-	List<Move> orderMoves(Board b, List<Move> in, Move ttMove, Move sibling) {
-		MoveComparator mc = new MoveComparator(b, ttMove, sibling);
+	List<Move> orderMoves(Board b, List<Move> in, Move ttMove, Move sibling, Move nmMove) {
+		MoveComparator mc = new MoveComparator(b, ttMove, sibling, nmMove);
 
 		Collections.sort(in, mc);
 
@@ -474,6 +478,7 @@ class CaffeinatedPawn {
 
 		List<Move> bestPv = null;
 
+		Move nmMove = null;
 		boolean inCheck = b.isKingAttacked();
 		int nmReduceDepth = depth > 6 ? 4 : 3;
 		if (depth >= nmReduceDepth && !inCheck && !isRootPosition && !isNullMove) {
@@ -502,10 +507,13 @@ class CaffeinatedPawn {
 					r.score = beta;
 					return r;
 				}
+
+				if (verification.pv != null)
+					nmMove = verification.pv.get(0);
 			}
 		}
 
-		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove, sibling);
+		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove, sibling, nmMove);
 
 		int lmrStart = !inCheck && depth >= 2 ? 4 : 999;
 
