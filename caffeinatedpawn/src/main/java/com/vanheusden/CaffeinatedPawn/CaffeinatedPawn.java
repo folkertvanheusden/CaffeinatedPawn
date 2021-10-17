@@ -688,11 +688,11 @@ class CaffeinatedPawn {
 
 				chosen = r;
 
-				if (timeDiff > maxThinkTime / 2)
-					break;
-
 				depth++;
 			}
+
+			if (timeDiff > maxThinkTime / 2)
+				break;
 		}
 
 		System.out.printf("# QS: %.2f%%\n", s.qsNodeCount * 100.0 / s.nodeCount);
