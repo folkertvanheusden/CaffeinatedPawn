@@ -42,12 +42,12 @@ class CaffeinatedPawn {
 			case KING:
 				return 10000;
 			case QUEEN:
-				return 900;
+				return 975;
 			case ROOK:
 				return 500;
 			case BISHOP:
 			case KNIGHT:
-				return 300;
+				return 325;
 			case PAWN:
 				return 100;
 		}
@@ -258,7 +258,9 @@ class CaffeinatedPawn {
 
 		boolean inCheck = b.isKingAttacked();
 
-		if (!inCheck) {
+		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null, null, null);
+
+		if (!inCheck || moves.size() == 0) {
 			r.score = evaluate(b);
 
 			if (r.score > alpha && r.score >= beta)
@@ -278,8 +280,6 @@ class CaffeinatedPawn {
 			if (alpha < r.score)
 				alpha = r.score;
 		}
-
-		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null, null, null);
 
 		int nMovesTried = 0;
 
@@ -314,15 +314,12 @@ class CaffeinatedPawn {
 			nMovesTried++;
 
 			Result child = quiescenceSearch(b, (short)-beta, (short)-alpha, (short)(qsDepth + 1), maxDepth, s);
-			if (child == null) {
-				b.undoMove();
+			b.undoMove();
 
+			if (child == null)
 				return null;
-			}
 
 			short score = (short)-child.score;
-
-			b.undoMove();
 
 			if (score > r.score) {
 				r.score = score;
