@@ -59,7 +59,7 @@ class CaffeinatedPawn {
 		if (p.equals(Piece.NONE))
 			return 0;
 
-		if (p.getPieceSide() == Side.WHITE)
+		if (p.getPieceSide().equals(Side.WHITE))
 			return 10;
 
 		return -10;
@@ -72,6 +72,40 @@ class CaffeinatedPawn {
 		Piece E5 = b.getPiece(Square.E5);
 
 		return (short)(evalCenterControlHelper(D4) + evalCenterControlHelper(D5) + evalCenterControlHelper(E4) + evalCenterControlHelper(E5));
+	}
+
+	short countMobility(Board b, Side s) {
+		short score = 0;
+
+		for(Move m : b.pseudoLegalCaptures()) {
+			Piece attacker = b.getPiece(m.getFrom());
+
+			if (attacker.getPieceType().equals(PieceType.PAWN) == false && attacker.getPieceSide().equals(s))
+				score++;
+		}
+
+		return score;
+	}
+
+	short mobility(Board b) {
+		short score = 0;
+
+		if (b.getSideToMove().equals(Side.WHITE)) {
+			score += countMobility(b, Side.WHITE);
+
+			b.doNullMove();
+			score -= countMobility(b, Side.BLACK);
+			b.undoMove();
+		}
+		else {
+			score -= countMobility(b, Side.BLACK);
+
+			b.doNullMove();
+			score += countMobility(b, Side.WHITE);
+			b.undoMove();
+		}
+
+		return score;
 	}
 
 	short evaluate(Board b) {
@@ -100,7 +134,7 @@ class CaffeinatedPawn {
 
 				material[sNr][ptNr]++;
 
-				if (s == Side.WHITE)
+				if (s.equals(Side.WHITE))
 					score += PSQ.psq(sq, p);
 				else
 					score -= PSQ.psq(sq, p);
@@ -111,7 +145,7 @@ class CaffeinatedPawn {
 
 					n_pawn[sNr][x]++;  // x
 
-					if (s == Side.WHITE)
+					if (s.equals(Side.WHITE))
 						whiteYmax[x] = Math.max(whiteYmax[x], y);  // y
 					else
 						blackYmin[x] = Math.min(blackYmin[x], y);  // y
@@ -123,9 +157,9 @@ class CaffeinatedPawn {
 					n_rook[sNr][x]++;
 
 					// rook on end ranks
-					if ((y == 0 || y == 1) && s == Side.BLACK)
+					if ((y == 0 || y == 1) && s.equals(Side.BLACK))
 						score -= 10;
-					else if ((y == 6 || y == 7) && s == Side.WHITE)
+					else if ((y == 6 || y == 7) && s.equals(Side.WHITE))
 						score += 10;
 				}
 			}
@@ -209,7 +243,9 @@ class CaffeinatedPawn {
 
 		score += evalCenterControl(b);
 
-		if (b.getSideToMove() == Side.BLACK)
+		score += mobility(b);
+
+		if (b.getSideToMove().equals(Side.BLACK))
 			score = (short)-score;
 
 		return score;
@@ -937,13 +973,13 @@ class CaffeinatedPawn {
 
 				int thinkTime = 0;
 				if (timeSet)
-					thinkTime = b.getSideToMove() == Side.WHITE ? wTime : bTime;
+					thinkTime = b.getSideToMove().equals(Side.WHITE) ? wTime : bTime;
 				else {
 					int curNMoves = movesToGo <= 0 ? 40 : movesToGo;
 
-					int timeInc = b.getSideToMove() == Side.WHITE ? wInc : bInc;
+					int timeInc = b.getSideToMove().equals(Side.WHITE) ? wInc : bInc;
 
-					int ms = b.getSideToMove() == Side.WHITE ? wTime : bTime;
+					int ms = b.getSideToMove().equals(Side.WHITE) ? wTime : bTime;
 
 					thinkTime = (int)((ms + (curNMoves - 1) * timeInc) / (double)(curNMoves + 7));
 

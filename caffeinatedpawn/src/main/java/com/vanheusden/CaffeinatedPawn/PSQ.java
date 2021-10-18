@@ -179,7 +179,7 @@ class PSQ
 	}
 
 	static int psq(Square sq, Piece p) {
-		return map.get(p)[sq.ordinal() ^ (p.getPieceSide() == Side.BLACK ? 56 : 0)];
+		return map.get(p)[sq.ordinal() ^ (p.getPieceSide().equals(Side.BLACK) ? 56 : 0)];
 	}
 
 	static int psq(Board b) {
