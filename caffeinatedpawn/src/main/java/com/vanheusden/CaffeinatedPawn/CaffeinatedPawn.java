@@ -995,6 +995,10 @@ class CaffeinatedPawn {
 			}
 	                else if (line.equals("isready"))
                         	System.out.println("readyok");
+                        else if (line.equals("fen"))
+                                System.out.println(b.getFen());
+                        else if (line.equals("board"))
+                                System.out.println(b);
 			else if (line.equals("quit") || line.equals("exit"))
 				System.exit(0);
 			else {
