@@ -289,11 +289,11 @@ class CaffeinatedPawn {
 		int nMovesTried = 0;
 
 		for(Move move : moves) {
-			if (b.isMoveLegal(move, false) == false)
-				continue;
-
 			if (!inCheck) {
-				PieceType attacker = b.getPiece(move.getFrom()).getPieceType();
+				Piece attackerPiece = b.getPiece(move.getFrom());
+				if (attackerPiece == null)
+					continue;
+				PieceType attacker = attackerPiece.getPieceType();
 				Piece victimPiece = null;
 				boolean isEnPassant = false;
 
@@ -313,7 +313,9 @@ class CaffeinatedPawn {
 				}
 			}
 
-			b.doMove(move);
+			if (b.doMove(move) == false)
+				continue;
+
 			nMovesTried++;
 
 			Result child = quiescenceSearch(b, (short)-beta, (short)-alpha, (short)(qsDepth + 1), maxDepth, s);
@@ -443,9 +445,11 @@ class CaffeinatedPawn {
 
 		Move ttMove = null;  // used later on for sorting
 		TtElement te = tt.lookup(b.hashCode());
-		if (te != null && isValidMove(b, te.m)) {
+		if (te != null) {
 			s.ttHit++;
 
+			// no verification here because the move won't be played
+			// directly (but sorted)
 			ttMove = te.m;
 
 			if (te.depth >= depth) {
@@ -464,7 +468,7 @@ class CaffeinatedPawn {
 				else if (te.f == ttFlag.UPPERBOUND && workScore <= alpha)
 					use = true;
 
-				if (use && (!isRootPosition || te.m != null)) {
+				if (use && (!isRootPosition || (te.m != null && isValidMove(b, te.m)))) {
 					r.score = workScore;
 
 					r.pv = new LinkedList<Move>();
@@ -525,10 +529,9 @@ class CaffeinatedPawn {
 		Move childSibling = null;
 
 		for(Move move : moves) {
-			if (b.isMoveLegal(move, false) == false)
+			if (b.doMove(move) == false)
 				continue;
 
-			b.doMove(move);
 			nMovesTried++;
 
 			Result child = null;
