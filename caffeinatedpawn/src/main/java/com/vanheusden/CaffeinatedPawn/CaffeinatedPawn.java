@@ -248,12 +248,7 @@ class CaffeinatedPawn {
 
 		Result r = new Result();
 
-		if (b.isMated()) {
-			r.score = (short)(-10000 + qsDepth + maxDepth);
-			return r;
-		}
-
-		if (b.isDraw() || b.isInsufficientMaterial() || b.isStaleMate() || b.isRepetition(1)) {
+		if (b.getHalfMoveCounter() >= 100 || b.isInsufficientMaterial() || b.isRepetition(1)) {
 			r.score = 0;
 			return r;
 		}
@@ -426,12 +421,7 @@ class CaffeinatedPawn {
 
 		Result r = new Result();
 
-		if (b.isMated()) {
-			r.score = (short)(-10000 + maxDepth - depth);
-			return r;
-		}
-
-		if (b.isDraw() || b.isInsufficientMaterial() || b.isStaleMate() || b.isRepetition(1)) {
+		if (b.getHalfMoveCounter() >= 100 || b.isInsufficientMaterial() || b.isRepetition(1)) {
 			r.score = 0;
 			return r;
 		}
@@ -999,6 +989,21 @@ class CaffeinatedPawn {
                                 System.out.println(b.getFen());
                         else if (line.equals("board"))
                                 System.out.println(b);
+                        else if (parts[0].equals("play")) {
+				int thinkTime = Integer.parseInt(parts[1]);
+
+				while(!b.isMated()) {
+					Result r = cp.iterativeDeepening(thinkTime, b);
+					if (r == null || r.pv == null)
+						break;
+
+					System.out.printf("%s\t%s\n", b.getFen(), r.pv.get(0));
+
+					b.doMove(r.pv.get(0));
+				}
+
+				System.out.println("finished");
+			}
 			else if (line.equals("quit") || line.equals("exit"))
 				System.exit(0);
 			else {
