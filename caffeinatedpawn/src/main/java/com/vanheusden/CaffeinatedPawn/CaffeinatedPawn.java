@@ -485,7 +485,7 @@ class CaffeinatedPawn {
 
 		List<Move> bestPv = null;
 
-		Move nmMove = null;
+		Move iidMove = null;  // nm is also doing a reduced depth search
 		boolean inCheck = b.isKingAttacked();
 		int nmReduceDepth = depth > 6 ? 4 : 3;
 		if (depth >= nmReduceDepth && !inCheck && !isRootPosition && !isNullMove) {
@@ -516,11 +516,25 @@ class CaffeinatedPawn {
 				}
 
 				if (verification.pv != null)
-					nmMove = verification.pv.get(0);
+					iidMove = verification.pv.get(0);
 			}
 		}
 
-		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove, sibling, nmMove);
+		if (ttMove == null && iidMove == null && depth >= 5) {
+			s.iidCount++;
+
+			Result iid = search(b, (short)(depth - 2), alpha, (short)beta, maxDepth, s, false, null);
+
+			if (iid == null)
+				return null;
+
+			if (iid.pv != null) {
+				s.iidCountHit++;
+				iidMove = iid.pv.get(0);
+			}
+		}
+
+		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove, sibling, iidMove);
 
 		int lmrStart = !inCheck && depth >= 2 ? 4 : 999;
 
@@ -728,6 +742,10 @@ class CaffeinatedPawn {
 		System.out.printf("# null moves: %d (%.2f%%)\n", s.nmCount, s.nmCount * 100.0 / s.nodeCount);
 		if (s.nmCount > 0)
 			System.out.printf("# null move verify: %.2f%%\n", s.nmVerifyCount * 100.0 / s.nmCount);
+
+		System.out.printf("# IID: %d (%.2f%%)\n", s.iidCount, s.iidCount * 100.0 / s.nodeCount);
+		if (s.iidCount > 0)
+			System.out.printf("# IID hit: %.2f%%\n", s.iidCountHit * 100.0 / s.iidCount);
 
 		System.out.printf("# LMRs: %d (%.2f%%)\n", s.lmrCount, s.lmrCount * 100.0 / s.nodeCount);
 		if (s.lmrCount > 0)

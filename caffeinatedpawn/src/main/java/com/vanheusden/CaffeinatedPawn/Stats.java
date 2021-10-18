@@ -16,6 +16,8 @@ class Stats
 
 	long nullMoveNodeCount;
 
+	long iidCount, iidCountHit;
+
 	Stats() {
 		deepestDepth = 0;
 		nodeCount = 0;
@@ -30,5 +32,7 @@ class Stats
 		ttInvoked = ttHit = ttHitGood = 0;
 
 		nullMoveNodeCount = 0;
+
+		iidCount = iidCountHit = 0;
 	}
 }
