@@ -249,7 +249,7 @@ class CaffeinatedPawn {
 
 		score += evalCenterControl(b);
 
-		score += mobility(b);
+		// score += mobility(b);
 
 		if (b.getSideToMove().equals(Side.BLACK))
 			score = (short)-score;
