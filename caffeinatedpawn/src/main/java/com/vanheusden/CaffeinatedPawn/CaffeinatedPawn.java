@@ -305,7 +305,7 @@ class CaffeinatedPawn {
 
 		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null, null, null);
 
-		if (!inCheck || moves.size() == 0) {
+		if (!inCheck) {
 			r.score = evaluate(b);
 
 			if (r.score > alpha && r.score >= beta)
