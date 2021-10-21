@@ -348,6 +348,10 @@ class CaffeinatedPawn {
 					short attackerValue = evalPieceType(attacker);
 					short victimValue = evalPieceType(victim);
 
+//					PieceType promoPieceType = move.getPromotion().getPieceType();
+//					if (promoPieceType != null)
+//						attackerValue += evalPieceType(promoPieceType);
+
 					if (attackerValue > victimValue && underAttackByOpponent(b, move.getTo()))
 						continue;
 				}
@@ -719,7 +723,7 @@ class CaffeinatedPawn {
 		short depth = 1;
 		while(!b.isMated() && to.get() == false) {
 			Result r = search(b, depth, alpha, beta, depth, s, false, null);
-			if (r == null || r.pv == null)
+			if (r == null)
 				break;
 
 			long now = new Date().getTime();
@@ -856,7 +860,7 @@ class CaffeinatedPawn {
 			short depth = 1;
 			while(!bLocal.isMated() && to.get() == false) {
 				Result r = search(bLocal, depth, alpha, beta, depth, s, false, null);
-				if (r == null || r.pv == null)
+				if (r == null)
 					break;
 
 				if (r.score <= alpha) {
