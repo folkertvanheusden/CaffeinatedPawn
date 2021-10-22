@@ -736,6 +736,7 @@ class CaffeinatedPawn {
 				if (alpha < -10000)
 					alpha = -10000;
 				add_alpha += add_alpha / 15 + 1;
+				s.itDeepAlpha++;
 			}
 			else if (r.score >= beta) {
 				alpha = (short)((alpha + beta) / 2);
@@ -743,8 +744,10 @@ class CaffeinatedPawn {
 				if (beta > 10000)
 					beta = 10000;
 				add_beta += add_beta / 15 + 1;
+				s.itDeepBeta++;
 			}
 			else {
+				s.itDeepOk++;
 				alpha = (short)(r.score - add_alpha);
 				if (alpha < -10000)
 					alpha = -10000;
@@ -802,7 +805,9 @@ class CaffeinatedPawn {
 		if (s.lmrCount > 0)
 			logger.log(Level.INFO, String.format("LMR full search: %.2f%%", s.lmrFullCount * 100.0 / s.lmrCount));
 
-		tt.dumpStats();
+		logger.log(Level.INFO, String.format("ID/Alpha: %d, ID/Beta: %d, ID/OK: %d", s.itDeepAlpha, s.itDeepBeta, s.itDeepOk));
+
+		tt.dumpStats(logger);
 
 		try {
 			toThread.interrupt();

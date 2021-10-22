@@ -18,6 +18,8 @@ class Stats
 
 	long iidCount, iidCountHit;
 
+	long itDeepAlpha, itDeepBeta, itDeepOk;
+
 	Stats() {
 		deepestDepth = 0;
 		nodeCount = 0;
@@ -34,5 +36,7 @@ class Stats
 		nullMoveNodeCount = 0;
 
 		iidCount = iidCountHit = 0;
+
+		itDeepAlpha = itDeepBeta = itDeepOk = 0;
 	}
 }
