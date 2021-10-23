@@ -20,8 +20,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class CaffeinatedPawn {
+	static Logger logger = Logger.getLogger(CaffeinatedPawn.class.getName());
+
 	AtomicBoolean to = new AtomicBoolean(false);
 	Tt tt = new Tt();
 	Thread ponderThread = null;
@@ -31,7 +37,7 @@ class CaffeinatedPawn {
 			Thread.sleep(ms);
 		}
 		catch(InterruptedException ex) {
-			System.out.println("# sleep interrupted");
+			logger.log(Level.INFO, "sleep interrupted");
 		}
 
 		to.set(true);
@@ -42,12 +48,12 @@ class CaffeinatedPawn {
 			case KING:
 				return 10000;
 			case QUEEN:
-				return 900;
+				return 975;
 			case ROOK:
 				return 500;
 			case BISHOP:
 			case KNIGHT:
-				return 300;
+				return 325;
 			case PAWN:
 				return 100;
 		}
@@ -59,7 +65,7 @@ class CaffeinatedPawn {
 		if (p.equals(Piece.NONE))
 			return 0;
 
-		if (p.getPieceSide() == Side.WHITE)
+		if (p.getPieceSide().equals(Side.WHITE))
 			return 10;
 
 		return -10;
@@ -72,6 +78,40 @@ class CaffeinatedPawn {
 		Piece E5 = b.getPiece(Square.E5);
 
 		return (short)(evalCenterControlHelper(D4) + evalCenterControlHelper(D5) + evalCenterControlHelper(E4) + evalCenterControlHelper(E5));
+	}
+
+	short countMobility(Board b, Side s) {
+		short score = 0;
+
+		for(Move m : b.pseudoLegalCaptures()) {
+			Piece attacker = b.getPiece(m.getFrom());
+
+			if (attacker.getPieceType().equals(PieceType.PAWN) == false && attacker.getPieceSide().equals(s))
+				score++;
+		}
+
+		return score;
+	}
+
+	short mobility(Board b) {
+		short score = 0;
+
+		if (b.getSideToMove().equals(Side.WHITE)) {
+			score += countMobility(b, Side.WHITE);
+
+			b.doNullMove();
+			score -= countMobility(b, Side.BLACK);
+			b.undoMove();
+		}
+		else {
+			score -= countMobility(b, Side.BLACK);
+
+			b.doNullMove();
+			score += countMobility(b, Side.WHITE);
+			b.undoMove();
+		}
+
+		return score;
 	}
 
 	short evaluate(Board b) {
@@ -100,7 +140,7 @@ class CaffeinatedPawn {
 
 				material[sNr][ptNr]++;
 
-				if (s == Side.WHITE)
+				if (s.equals(Side.WHITE))
 					score += PSQ.psq(sq, p);
 				else
 					score -= PSQ.psq(sq, p);
@@ -111,7 +151,7 @@ class CaffeinatedPawn {
 
 					n_pawn[sNr][x]++;  // x
 
-					if (s == Side.WHITE)
+					if (s.equals(Side.WHITE))
 						whiteYmax[x] = Math.max(whiteYmax[x], y);  // y
 					else
 						blackYmin[x] = Math.min(blackYmin[x], y);  // y
@@ -123,9 +163,9 @@ class CaffeinatedPawn {
 					n_rook[sNr][x]++;
 
 					// rook on end ranks
-					if ((y == 0 || y == 1) && s == Side.BLACK)
+					if ((y == 0 || y == 1) && s.equals(Side.BLACK))
 						score -= 10;
-					else if ((y == 6 || y == 7) && s == Side.WHITE)
+					else if ((y == 6 || y == 7) && s.equals(Side.WHITE))
 						score += 10;
 				}
 			}
@@ -133,8 +173,8 @@ class CaffeinatedPawn {
 
 		// double pawns are no good
 		for(int x=0; x<8; x++) {
-			score += n_pawn[Side.WHITE.ordinal()][x] >= 2 ? -15 : 0;
-			score -= n_pawn[Side.BLACK.ordinal()][x] >= 2 ? 15 : 0;
+			score += n_pawn[Side.WHITE.ordinal()][x] >= 2 ? -15 * (n_pawn[Side.WHITE.ordinal()][x] - 1): 0;
+			score -= n_pawn[Side.BLACK.ordinal()][x] >= 2 ? 15 * (n_pawn[Side.BLACK.ordinal()][x] - 1): 0;
 		}
 
 		// check for isolated pawns (no good)
@@ -209,7 +249,9 @@ class CaffeinatedPawn {
 
 		score += evalCenterControl(b);
 
-		if (b.getSideToMove() == Side.BLACK)
+		// score += mobility(b);
+
+		if (b.getSideToMove().equals(Side.BLACK))
 			score = (short)-score;
 
 		return score;
@@ -241,14 +283,17 @@ class CaffeinatedPawn {
 	}
 
 	Result quiescenceSearch(Board b, short alpha, short beta, short qsDepth, short maxDepth, Stats s) {
-		if (to.get())
+		if (to.get()) {
+			// logger.log(Level.INFO, String.format("quiescenceSearch %d t/o exit", qsDepth));
 			return null;
+		}
 
 		s.qsNodeCount++;
 
 		Result r = new Result();
 
 		if (b.getHalfMoveCounter() >= 100 || b.isInsufficientMaterial() || b.isRepetition(1)) {
+			// logger.log(Level.INFO, "quiescenceSearch draw");
 			r.score = 0;
 			return r;
 		}
@@ -257,6 +302,8 @@ class CaffeinatedPawn {
 		List<Move> bestPv = null;
 
 		boolean inCheck = b.isKingAttacked();
+
+		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null, null, null);
 
 		if (!inCheck) {
 			r.score = evaluate(b);
@@ -278,8 +325,6 @@ class CaffeinatedPawn {
 			if (alpha < r.score)
 				alpha = r.score;
 		}
-
-		List<Move> moves = orderMoves(b, inCheck ? b.pseudoLegalMoves() : b.pseudoLegalCaptures(), null, null, null);
 
 		int nMovesTried = 0;
 
@@ -303,6 +348,10 @@ class CaffeinatedPawn {
 					short attackerValue = evalPieceType(attacker);
 					short victimValue = evalPieceType(victim);
 
+//					PieceType promoPieceType = move.getPromotion().getPieceType();
+//					if (promoPieceType != null)
+//						attackerValue += evalPieceType(promoPieceType);
+
 					if (attackerValue > victimValue && underAttackByOpponent(b, move.getTo()))
 						continue;
 				}
@@ -314,15 +363,14 @@ class CaffeinatedPawn {
 			nMovesTried++;
 
 			Result child = quiescenceSearch(b, (short)-beta, (short)-alpha, (short)(qsDepth + 1), maxDepth, s);
-			if (child == null) {
-				b.undoMove();
+			b.undoMove();
 
+			if (child == null) {
+				// logger.log(Level.INFO, String.format("quiescenceSearch %d t/o exit (child == null)", qsDepth));
 				return null;
 			}
 
 			short score = (short)-child.score;
-
-			b.undoMove();
 
 			if (score > r.score) {
 				r.score = score;
@@ -411,8 +459,10 @@ class CaffeinatedPawn {
 	}
 
 	Result search(Board b, short depth, short alpha, short beta, short maxDepth, Stats s, boolean isNullMove, Move sibling) {
-		if (to.get())
+		if (to.get()) {
+			// logger.log(Level.INFO, String.format("search %d t/o exit", depth));
 			return null;
+		}
 
 		s.nodeCount++;
 
@@ -421,15 +471,16 @@ class CaffeinatedPawn {
 
 		Result r = new Result();
 
-		if (b.getHalfMoveCounter() >= 100 || b.isInsufficientMaterial() || b.isRepetition(1)) {
+		boolean isRootPosition = maxDepth == depth;
+
+		if (!isRootPosition && (b.getHalfMoveCounter() >= 100 || b.isInsufficientMaterial() || b.isRepetition(1))) {
+			// logger.log(Level.INFO, String.format("search %d draw exit", depth));
 			r.score = 0;
 			return r;
 		}
 
 		if (depth == 0)
 			return quiescenceSearch(b, alpha, beta, (short)0, maxDepth, s);
-
-		boolean isRootPosition = maxDepth == depth;
 
 		s.ttInvoked++;
 
@@ -461,8 +512,10 @@ class CaffeinatedPawn {
 				if (use && (!isRootPosition || (te.m != null && isValidMove(b, te.m)))) {
 					r.score = workScore;
 
-					r.pv = new LinkedList<Move>();
-					r.pv.add(te.m);
+					if (te.m != null) {
+						r.pv = new LinkedList<Move>();
+						r.pv.add(te.m);
+					}
 
 					return r;
 				}
@@ -487,8 +540,10 @@ class CaffeinatedPawn {
 
 			b.undoMove();
 
-			if (nm == null)
+			if (nm == null) {
+				// logger.log(Level.INFO, String.format("search %d NM exit", depth));
 				return null;
+			}
 
 			int nmscore = -nm.score;
 
@@ -497,8 +552,10 @@ class CaffeinatedPawn {
 
 				Result verification = search(b, (short)(depth - nmReduceDepth), (short)(beta - 1), (short)beta, maxDepth, s, false, null);
 
-				if (verification == null)
+				if (verification == null) {
+					// logger.log(Level.INFO, String.format("search %d NM verify exit", depth));
 					return null;
+				}
 
 				if (verification.score >= beta) {
 					r.score = beta;
@@ -515,8 +572,10 @@ class CaffeinatedPawn {
 
 			Result iid = search(b, (short)(depth - 2), alpha, (short)beta, maxDepth, s, false, null);
 
-			if (iid == null)
+			if (iid == null) {
+				// logger.log(Level.INFO, String.format("search %d IID exit", depth));
 				return null;
+			}
 
 			if (iid.pv != null) {
 				s.iidCountHit++;
@@ -571,8 +630,10 @@ class CaffeinatedPawn {
 
 			b.undoMove();
 
-			if (child == null)
+			if (child == null) {
+				// logger.log(Level.INFO, String.format("search %d child == null exit", depth));
 				return null;
+			}
 
 			short score = (short)-child.score;
 
@@ -664,7 +725,7 @@ class CaffeinatedPawn {
 		short depth = 1;
 		while(!b.isMated() && to.get() == false) {
 			Result r = search(b, depth, alpha, beta, depth, s, false, null);
-			if (r == null || r.pv == null)
+			if (r == null)
 				break;
 
 			long now = new Date().getTime();
@@ -677,6 +738,7 @@ class CaffeinatedPawn {
 				if (alpha < -10000)
 					alpha = -10000;
 				add_alpha += add_alpha / 15 + 1;
+				s.itDeepAlpha++;
 			}
 			else if (r.score >= beta) {
 				alpha = (short)((alpha + beta) / 2);
@@ -684,8 +746,10 @@ class CaffeinatedPawn {
 				if (beta > 10000)
 					beta = 10000;
 				add_beta += add_beta / 15 + 1;
+				s.itDeepBeta++;
 			}
 			else {
+				s.itDeepOk++;
 				alpha = (short)(r.score - add_alpha);
 				if (alpha < -10000)
 					alpha = -10000;
@@ -706,42 +770,46 @@ class CaffeinatedPawn {
 					pv += m;
 				}
 
-				System.out.printf("info depth %d score cp %d hashfull %d time %d nodes %d nps %d pv %s\n", depth, r.score, tt.hashFullPermil(), timeDiff, s.nodeCount + s.qsNodeCount, nps, pv);
+				emit(String.format("info depth %d score cp %d hashfull %d time %d nodes %d nps %d pv %s", depth, r.score, tt.hashFullPermil(), timeDiff, s.nodeCount + s.qsNodeCount, nps, pv));
 
 				chosen = r;
 
 				depth++;
 			}
 
-			if (timeDiff > maxThinkTime / 2)
+			if (timeDiff > maxThinkTime / 2) {
+				logger.log(Level.INFO, String.format("time (%d) > thinktime/2 (%d)", timeDiff, maxThinkTime / 2));
 				break;
+			}
 		}
 
-		System.out.printf("# QS: %.2f%%\n", s.qsNodeCount * 100.0 / (s.nodeCount + s.qsNodeCount));
+		logger.log(Level.INFO, String.format("QS: %.2f%%", s.qsNodeCount * 100.0 / (s.nodeCount + s.qsNodeCount)));
 
-		System.out.printf("# NM: %.2f%%\n", s.nullMoveNodeCount * 100.0 / s.nodeCount);
+		logger.log(Level.INFO, String.format("NM: %.2f%%", s.nullMoveNodeCount * 100.0 / s.nodeCount));
 
-		System.out.printf("# tt invoked: %d (%.2f%%)\n", s.ttInvoked, s.ttInvoked * 100.0 / s.nodeCount);
-		System.out.printf("# tt hit: %.2f%%, hit good: %.2f%%\n", s.ttHit * 100.0 / s.ttInvoked, s.ttHitGood * 100.0 / s.ttInvoked);
+		logger.log(Level.INFO, String.format("tt invoked: %d (%.2f%%)", s.ttInvoked, s.ttInvoked * 100.0 / s.nodeCount));
+		logger.log(Level.INFO, String.format("tt hit: %.2f%%, hit good: %.2f%%", s.ttHit * 100.0 / s.ttInvoked, s.ttHitGood * 100.0 / s.ttInvoked));
 
 		if (s.bcoCount > 0)
-			System.out.printf("# avg bco index: %.2f\n", s.bcoIndex / (double)s.bcoCount);
+			logger.log(Level.INFO, String.format("avg bco index: %.2f", s.bcoIndex / (double)s.bcoCount));
 		if (s.qsBcoCount > 0)
-			System.out.printf("# avg qs bco index: %.2f\n", s.qsBcoIndex / (double)s.qsBcoCount);
+			logger.log(Level.INFO, String.format("avg qs bco index: %.2f", s.qsBcoIndex / (double)s.qsBcoCount));
 
-		System.out.printf("# null moves: %d (%.2f%%)\n", s.nmCount, s.nmCount * 100.0 / s.nodeCount);
+		logger.log(Level.INFO, String.format("null moves: %d (%.2f%%)", s.nmCount, s.nmCount * 100.0 / s.nodeCount));
 		if (s.nmCount > 0)
-			System.out.printf("# null move verify: %.2f%%\n", s.nmVerifyCount * 100.0 / s.nmCount);
+			logger.log(Level.INFO, String.format("null move verify: %.2f%%", s.nmVerifyCount * 100.0 / s.nmCount));
 
-		System.out.printf("# IID: %d (%.2f%%)\n", s.iidCount, s.iidCount * 100.0 / s.nodeCount);
+		logger.log(Level.INFO, String.format("IID: %d (%.2f%%)", s.iidCount, s.iidCount * 100.0 / s.nodeCount));
 		if (s.iidCount > 0)
-			System.out.printf("# IID hit: %.2f%%\n", s.iidCountHit * 100.0 / s.iidCount);
+			logger.log(Level.INFO, String.format("IID hit: %.2f%%", s.iidCountHit * 100.0 / s.iidCount));
 
-		System.out.printf("# LMRs: %d (%.2f%%)\n", s.lmrCount, s.lmrCount * 100.0 / s.nodeCount);
+		logger.log(Level.INFO, String.format("LMRs: %d (%.2f%%)", s.lmrCount, s.lmrCount * 100.0 / s.nodeCount));
 		if (s.lmrCount > 0)
-			System.out.printf("# LMR full search: %.2f%%\n", s.lmrFullCount * 100.0 / s.lmrCount);
+			logger.log(Level.INFO, String.format("LMR full search: %.2f%%", s.lmrFullCount * 100.0 / s.lmrCount));
 
-		tt.dumpStats();
+		logger.log(Level.INFO, String.format("ID/Alpha: %d, ID/Beta: %d, ID/OK: %d", s.itDeepAlpha, s.itDeepBeta, s.itDeepOk));
+
+		tt.dumpStats(logger);
 
 		try {
 			toThread.interrupt();
@@ -764,14 +832,19 @@ class CaffeinatedPawn {
 			chosen.score = 0;
 			chosen.pv = new LinkedList<Move>();
 
+			logger.log(Level.INFO, String.format("no move, depth %d, time %d", depth, (new Date().getTime()) - start));
+			logger.log(Level.INFO, String.format("%s", b.getFen()));
+			logger.log(Level.INFO, String.format("%s", b));
+			logger.log(Level.INFO, String.format("%s", b.legalMoves()));
+
 			TtElement te = tt.lookup(b.hashCode());
 			if (te != null && isValidMove(b, te.m)) {
 				chosen.pv.add(te.m);
 				chosen.score = te.score;
-				System.out.println("# no move calculated but did have a valid move stored in tt");
+				logger.log(Level.INFO, "no move calculated but did have a valid move stored in tt");
 			}
 			else {
-				System.out.println("# no move calculated: picked a random one");
+				logger.log(Level.INFO, "no move calculated: picked a random one");
 				chosen.pv.add(b.legalMoves().get(0));
 			}
 		}
@@ -794,7 +867,7 @@ class CaffeinatedPawn {
 			short depth = 1;
 			while(!bLocal.isMated() && to.get() == false) {
 				Result r = search(bLocal, depth, alpha, beta, depth, s, false, null);
-				if (r == null || r.pv == null)
+				if (r == null)
 					break;
 
 				if (r.score <= alpha) {
@@ -841,7 +914,18 @@ class CaffeinatedPawn {
 		}
 	}
 
-	public static void main(String [] args) {
+	public static void emit(String what) {
+		logger.log(Level.INFO, String.format("< %s", what));
+		System.out.println(what);
+		System.out.flush();  // redundant (?)
+	}
+
+	public static void main(String [] args) throws java.io.IOException {
+		Handler fileHandler = new FileHandler("cp.log", true);
+		logger.addHandler(fileHandler);
+		fileHandler.setLevel(Level.ALL);
+		logger.setUseParentHandlers(false);
+
 		CaffeinatedPawn cp = new CaffeinatedPawn();
 
 		Board b = new Board();
@@ -859,12 +943,14 @@ class CaffeinatedPawn {
 				break;
 			}
 
+			logger.log(Level.INFO, String.format("> %s", line));
+
 			String[] parts = line.split(" ");
 
 			if (parts[0].equals("uci")) {
-				System.out.println("id name CaffeinatedPawn");
-				System.out.println("id author Folkert van Heusden");
-				System.out.println("uciok");
+				emit("id name CaffeinatedPawn");
+				emit("id author Folkert van Heusden");
+				emit("uciok");
 			}
 			else if (line.equals("ucinewgame")) {
 				cp.stopPonder();
@@ -940,13 +1026,13 @@ class CaffeinatedPawn {
 
 				int thinkTime = 0;
 				if (timeSet)
-					thinkTime = b.getSideToMove() == Side.WHITE ? wTime : bTime;
+					thinkTime = b.getSideToMove().equals(Side.WHITE) ? wTime : bTime;
 				else {
 					int curNMoves = movesToGo <= 0 ? 40 : movesToGo;
 
-					int timeInc = b.getSideToMove() == Side.WHITE ? wInc : bInc;
+					int timeInc = b.getSideToMove().equals(Side.WHITE) ? wInc : bInc;
 
-					int ms = b.getSideToMove() == Side.WHITE ? wTime : bTime;
+					int ms = b.getSideToMove().equals(Side.WHITE) ? wTime : bTime;
 
 					thinkTime = (int)((ms + (curNMoves - 1) * timeInc) / (double)(curNMoves + 7));
 
@@ -955,40 +1041,31 @@ class CaffeinatedPawn {
 						thinkTime = limit_duration_min;
 				}
 
-				System.out.printf("# think time: %d\n", thinkTime);
+				emit(String.format("# think time: %d", thinkTime));
 
 				try {
 					Result r = cp.iterativeDeepening(thinkTime, b);
 
 					if (r == null || r.pv == null) {
-						System.out.println("bestmove a1a1");
+						emit("bestmove a1a1");
 						cp.startPonder(b, null);
 					}
 					else {
-						System.out.print("bestmove ");
-						System.out.println(r.pv.get(0));
+						emit(String.format("bestmove %s", r.pv.get(0)));
 						cp.startPonder(b, r.pv.get(0));
 					}
 				}
 				catch(Exception e) {
 					System.err.println(e);
-
-					try {
-						PrintWriter out = new PrintWriter(new FileOutputStream("cafpawn-err.txt"), true);
-						out.println(e);
-						out.close();
-					}
-					catch(Exception e2) {
-						System.err.println(e2);
-					}
+					logger.log(Level.SEVERE, "cp.iterativeDeepening", e);
 				}
 			}
 	                else if (line.equals("isready"))
-                        	System.out.println("readyok");
+                        	emit("readyok");
                         else if (line.equals("fen"))
-                                System.out.println(b.getFen());
+                                emit(b.getFen());
                         else if (line.equals("board"))
-                                System.out.println(b);
+                                emit(String.format("%s", b));
                         else if (parts[0].equals("play")) {
 				int thinkTime = Integer.parseInt(parts[1]);
 
@@ -997,20 +1074,18 @@ class CaffeinatedPawn {
 					if (r == null || r.pv == null)
 						break;
 
-					System.out.printf("%s\t%s\n", b.getFen(), r.pv.get(0));
+					emit(String.format("%s\t%s", b.getFen(), r.pv.get(0)));
 
 					b.doMove(r.pv.get(0));
 				}
 
-				System.out.println("finished");
+				emit("finished");
 			}
 			else if (line.equals("quit") || line.equals("exit"))
 				System.exit(0);
 			else {
-				System.out.println("# That (" + parts[0] + ") was not understood");
+				emit("# That (" + parts[0] + ") was not understood");
 			} 
-
-			System.out.flush();
 		}
 	}
 }

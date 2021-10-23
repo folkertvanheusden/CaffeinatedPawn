@@ -2,6 +2,8 @@ package com.vanheusden.CaffeinatedPawn;
 
 import com.github.bhlangonijr.chesslib.move.Move;
 import java.lang.Math.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class Tt
 {
@@ -26,16 +28,16 @@ class Tt
 		ts = new TtStats();
 	}
 
-	void dumpStats() {
-		System.out.printf("# tt lookups: %d, hits: %.2f%%\n", ts.lookups, ts.lookupHits * 100.0 / ts.lookups);
+	void dumpStats(Logger logger) {
+		logger.log(Level.INFO, String.format("# tt lookups: %d, hits: %.2f%%\n", ts.lookups, ts.lookupHits * 100.0 / ts.lookups));
 
-		System.out.printf("# tt stores: %d, skipDepth: %.2f%%, skipFlag: %.2f%%, skipBest: %.2f%%, minDepth: %.2f%%, age: %.2f%%\n",
+		logger.log(Level.INFO, String.format("# tt stores: %d, skipDepth: %.2f%%, skipFlag: %.2f%%, skipBest: %.2f%%, minDepth: %.2f%%, age: %.2f%%\n",
 				ts.stores,
 				ts.storesSkipDepth * 100.0 / ts.stores,
 				ts.storesSkipFlag * 100.0 / ts.stores,
 				ts.storesSkipBest * 100.0 / ts.stores,
 				ts.storeMinDepth * 100.0 / ts.stores,
-				ts.storeAge * 100.0 / ts.stores);
+				ts.storeAge * 100.0 / ts.stores));
 	}
 
 	TtElement lookup(long hash) {
