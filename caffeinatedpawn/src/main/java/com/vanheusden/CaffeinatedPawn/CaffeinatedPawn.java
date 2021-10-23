@@ -512,8 +512,10 @@ class CaffeinatedPawn {
 				if (use && (!isRootPosition || (te.m != null && isValidMove(b, te.m)))) {
 					r.score = workScore;
 
-					r.pv = new LinkedList<Move>();
-					r.pv.add(te.m);
+					if (te.m != null) {
+						r.pv = new LinkedList<Move>();
+						r.pv.add(te.m);
+					}
 
 					return r;
 				}
