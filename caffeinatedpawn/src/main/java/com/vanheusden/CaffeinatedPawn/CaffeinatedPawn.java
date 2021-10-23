@@ -173,8 +173,8 @@ class CaffeinatedPawn {
 
 		// double pawns are no good
 		for(int x=0; x<8; x++) {
-			score += n_pawn[Side.WHITE.ordinal()][x] >= 2 ? -15 : 0;
-			score -= n_pawn[Side.BLACK.ordinal()][x] >= 2 ? 15 : 0;
+			score += n_pawn[Side.WHITE.ordinal()][x] >= 2 ? -15 * (n_pawn[Side.WHITE.ordinal()][x] - 1): 0;
+			score -= n_pawn[Side.BLACK.ordinal()][x] >= 2 ? 15 * (n_pawn[Side.BLACK.ordinal()][x] - 1): 0;
 		}
 
 		// check for isolated pawns (no good)
