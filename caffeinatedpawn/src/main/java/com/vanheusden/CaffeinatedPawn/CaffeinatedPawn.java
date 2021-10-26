@@ -510,6 +510,7 @@ class CaffeinatedPawn {
 					use = true;
 
 				if (use && (!isRootPosition || (te.m != null && isValidMove(b, te.m)))) {
+					s.ttUse++;
 					r.score = workScore;
 
 					if (te.m != null) {
@@ -739,6 +740,7 @@ class CaffeinatedPawn {
 					alpha = -10000;
 				add_alpha += add_alpha / 15 + 1;
 				s.itDeepAlpha++;
+				emit(String.format("info depth %d score cp %d hashfull %d nodes %d", depth, r.score, tt.hashFullPermil(), s.nodeCount + s.qsNodeCount));
 			}
 			else if (r.score >= beta) {
 				alpha = (short)((alpha + beta) / 2);
@@ -747,6 +749,7 @@ class CaffeinatedPawn {
 					beta = 10000;
 				add_beta += add_beta / 15 + 1;
 				s.itDeepBeta++;
+				emit(String.format("info depth %d score cp %d hashfull %d nodes %d", depth, r.score, tt.hashFullPermil(), s.nodeCount + s.qsNodeCount));
 			}
 			else {
 				s.itDeepOk++;
@@ -788,7 +791,7 @@ class CaffeinatedPawn {
 		logger.log(Level.INFO, String.format("NM: %.2f%%", s.nullMoveNodeCount * 100.0 / s.nodeCount));
 
 		logger.log(Level.INFO, String.format("tt invoked: %d (%.2f%%)", s.ttInvoked, s.ttInvoked * 100.0 / s.nodeCount));
-		logger.log(Level.INFO, String.format("tt hit: %.2f%%, hit good: %.2f%%", s.ttHit * 100.0 / s.ttInvoked, s.ttHitGood * 100.0 / s.ttInvoked));
+		logger.log(Level.INFO, String.format("tt hit: %.2f%%, hit good: %.2f%%, use: %.2f%%", s.ttHit * 100.0 / s.ttInvoked, s.ttHitGood * 100.0 / s.ttInvoked, s.ttUse * 100.0 / s.ttInvoked));
 
 		if (s.bcoCount > 0)
 			logger.log(Level.INFO, String.format("avg bco index: %.2f", s.bcoIndex / (double)s.bcoCount));
