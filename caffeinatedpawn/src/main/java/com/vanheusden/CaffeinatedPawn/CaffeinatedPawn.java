@@ -295,6 +295,7 @@ class CaffeinatedPawn {
 		if (b.getHalfMoveCounter() >= 100 || b.isInsufficientMaterial() || b.isRepetition(1)) {
 			// logger.log(Level.INFO, "quiescenceSearch draw");
 			r.score = 0;
+			r.notInTt = true;
 			return r;
 		}
 
@@ -476,6 +477,7 @@ class CaffeinatedPawn {
 		if (!isRootPosition && (b.getHalfMoveCounter() >= 100 || b.isInsufficientMaterial() || b.isRepetition(1))) {
 			// logger.log(Level.INFO, String.format("search %d draw exit", depth));
 			r.score = 0;
+			r.notInTt = true;
 			return r;
 		}
 
@@ -682,7 +684,8 @@ class CaffeinatedPawn {
 			m = bestPv.get(0);
 		}
 
-                tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? m : ttMove);
+		if (r.notInTt == false)
+			tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? m : ttMove);
 
 		return r;
 	}

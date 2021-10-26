@@ -8,4 +8,5 @@ class Result
 {
 	short score;
 	List<Move> pv;
+	boolean notInTt = false;
 }
