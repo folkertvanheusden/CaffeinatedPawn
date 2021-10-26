@@ -584,6 +584,25 @@ class CaffeinatedPawn {
 			}
 		}
 
+		if (!isRootPosition && depth <= 3 && beta <= 9800) {
+			r.score = evaluate(b);
+
+			// static null pruning (reverse futility pruning)
+			if (depth == 1 && r.score - evalPieceType(PieceType.KNIGHT) > beta) {
+				r.score = beta;
+				return r;
+			}
+
+			if (depth == 2 && r.score - evalPieceType(PieceType.ROOK) > beta) {
+				r.score = beta;
+				return r;
+			}
+
+			if (depth == 3 && r.score - evalPieceType(PieceType.QUEEN) > beta)
+				depth--;
+		}
+
+
 		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove, sibling, iidMove);
 
 		int lmrStart = !inCheck && depth >= 2 ? 4 : 999;
