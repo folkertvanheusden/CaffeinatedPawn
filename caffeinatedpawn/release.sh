@@ -23,6 +23,6 @@ cp ../README.md ${DIR}
 ZIP=CaffeinatedPawn-${GITHASH}.zip
 zip -9vr ${ZIP} ${DIR}
 
-scp -C ${ZIP} @belle:site/CaffeinatedPawn/
+scp -C ${ZIP} @belle:site/chess/CaffeinatedPawn/
 
 rm -rf ${ZIP} ${DIR}
