@@ -719,13 +719,6 @@ class CaffeinatedPawn {
 				r.score = 0;
 		}
 
-                ttFlag flag = ttFlag.EXACT;
-
-                if (r.score <= startAlpha)
-                        flag = ttFlag.UPPERBOUND;
-                else if (r.score >= beta)
-                        flag = ttFlag.LOWERBOUND;
-
 		Move m = null;
 
 		if (bestPv != null) {
@@ -734,8 +727,16 @@ class CaffeinatedPawn {
 			m = bestPv.get(0);
 		}
 
-		if (r.notInTt == false)
+		if (r.notInTt == false) {
+			ttFlag flag = ttFlag.EXACT;
+
+			if (r.score <= startAlpha)
+				flag = ttFlag.UPPERBOUND;
+			else if (r.score >= beta)
+				flag = ttFlag.LOWERBOUND;
+
 			tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? m : ttMove);
+		}
 
 		return r;
 	}
