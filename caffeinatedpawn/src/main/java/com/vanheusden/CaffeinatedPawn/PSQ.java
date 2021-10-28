@@ -147,26 +147,45 @@ class PSQ
 	     42,  46,  48,  50,  50,  48,  46,  42
 	};
 
-	static Map<Piece, int []> map = new TreeMap<Piece, int []>();
+	static Map<Piece, int []> mapMG = new TreeMap<Piece, int []>();
+	static Map<Piece, int []> mapEG = new TreeMap<Piece, int []>();
 
 	static {
-		map.put(Piece.WHITE_KING, KingPSTMG);
-		map.put(Piece.BLACK_KING, KingPSTMG);
+		mapMG.put(Piece.WHITE_KING, KingPSTMG);
+		mapMG.put(Piece.BLACK_KING, KingPSTMG);
 
-		map.put(Piece.WHITE_QUEEN, QueenPSTMG);
-		map.put(Piece.BLACK_QUEEN, QueenPSTMG);
+		mapMG.put(Piece.WHITE_QUEEN, QueenPSTMG);
+		mapMG.put(Piece.BLACK_QUEEN, QueenPSTMG);
 
-		map.put(Piece.WHITE_ROOK, RookPSTMG);
-		map.put(Piece.BLACK_ROOK, RookPSTMG);
+		mapMG.put(Piece.WHITE_ROOK, RookPSTMG);
+		mapMG.put(Piece.BLACK_ROOK, RookPSTMG);
 
-		map.put(Piece.WHITE_BISHOP, BishopPSTMG);
-		map.put(Piece.BLACK_BISHOP, BishopPSTMG);
+		mapMG.put(Piece.WHITE_BISHOP, BishopPSTMG);
+		mapMG.put(Piece.BLACK_BISHOP, BishopPSTMG);
 
-		map.put(Piece.WHITE_KNIGHT, KnightPSTMG);
-		map.put(Piece.BLACK_KNIGHT, KnightPSTMG);
+		mapMG.put(Piece.WHITE_KNIGHT, KnightPSTMG);
+		mapMG.put(Piece.BLACK_KNIGHT, KnightPSTMG);
 
-		map.put(Piece.WHITE_PAWN, PawnPSTMG);
-		map.put(Piece.BLACK_PAWN, PawnPSTMG);
+		mapMG.put(Piece.WHITE_PAWN, PawnPSTMG);
+		mapMG.put(Piece.BLACK_PAWN, PawnPSTMG);
+
+		mapEG.put(Piece.WHITE_KING, KingPSTEG);
+		mapEG.put(Piece.BLACK_KING, KingPSTEG);
+
+		mapEG.put(Piece.WHITE_QUEEN, QueenPSTEG);
+		mapEG.put(Piece.BLACK_QUEEN, QueenPSTEG);
+
+		mapEG.put(Piece.WHITE_ROOK, RookPSTEG);
+		mapEG.put(Piece.BLACK_ROOK, RookPSTEG);
+
+		mapEG.put(Piece.WHITE_BISHOP, BishopPSTEG);
+		mapEG.put(Piece.BLACK_BISHOP, BishopPSTEG);
+
+		mapEG.put(Piece.WHITE_KNIGHT, KnightPSTEG);
+		mapEG.put(Piece.BLACK_KNIGHT, KnightPSTEG);
+
+		mapEG.put(Piece.WHITE_PAWN, PawnPSTEG);
+		mapEG.put(Piece.BLACK_PAWN, PawnPSTEG);
 	}
 
 	static int processPsq(List<Square> squares, int values[], int xor) {
@@ -178,8 +197,11 @@ class PSQ
 		return score;
 	}
 
-	static int psq(Square sq, Piece p) {
-		return map.get(p)[sq.ordinal() ^ (p.getPieceSide().equals(Side.BLACK) ? 56 : 0)];
+	static int psq(Square sq, Piece p, int phase) {
+		int mg = mapMG.get(p)[sq.ordinal() ^ (p.getPieceSide().equals(Side.BLACK) ? 56 : 0)];
+		int eg = mapEG.get(p)[sq.ordinal() ^ (p.getPieceSide().equals(Side.BLACK) ? 56 : 0)];
+
+		return (mg * (255 - phase) + eg * phase) / 256;
 	}
 
 	static int psq(Board b) {

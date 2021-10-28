@@ -114,6 +114,30 @@ class CaffeinatedPawn {
 		return score;
 	}
 
+	int calcGamePhase(int [][]material) {
+		int num_knights = material[Side.WHITE.ordinal()][PieceType.KNIGHT.ordinal()] + material[Side.BLACK.ordinal()][PieceType.KNIGHT.ordinal()];
+		int num_bishops = material[Side.WHITE.ordinal()][PieceType.BISHOP.ordinal()] + material[Side.BLACK.ordinal()][PieceType.BISHOP.ordinal()];
+		int num_rooks   = material[Side.WHITE.ordinal()][PieceType.ROOK.ordinal()]   + material[Side.BLACK.ordinal()][PieceType.ROOK.ordinal()];
+		int num_queens  = material[Side.WHITE.ordinal()][PieceType.QUEEN.ordinal()]  + material[Side.BLACK.ordinal()][PieceType.QUEEN.ordinal()];
+
+		// from https://www.chessprogramming.org/Tapered_Eval
+		int knight_phase = 1;
+		int bishop_phase = 1;
+		int rook_phase   = 2;
+		int queen_phase  = 4;
+
+		int total_phase = knight_phase * 4 + bishop_phase * 4 + rook_phase * 4 + queen_phase * 2;
+
+		int phase = total_phase;
+
+		phase -= knight_phase * num_knights;
+		phase -= bishop_phase * num_bishops;
+		phase -= rook_phase   * num_rooks;
+		phase -= queen_phase  * num_queens;
+
+		return (phase * 256 + (total_phase / 2)) / total_phase;
+	}
+
 	short evaluate(Board b) {
 		short score = 0;
 
@@ -139,11 +163,6 @@ class CaffeinatedPawn {
 				int sNr = s.ordinal();
 
 				material[sNr][ptNr]++;
-
-				if (s.equals(Side.WHITE))
-					score += PSQ.psq(sq, p);
-				else
-					score -= PSQ.psq(sq, p);
 
 				if (pt == PieceType.PAWN) {
 					int x = sq.getFile().ordinal();
@@ -171,10 +190,41 @@ class CaffeinatedPawn {
 			}
 		}
 
+		int gamePhase = calcGamePhase(material);
+
+		// psq
+		for(int sqIdx = 0; sqIdx < 64; sqIdx++) {
+			Square sq = Square.squareAt(sqIdx);
+
+			Piece p = b.getPiece(sq);
+
+			if (Piece.NONE.equals(p) == false) {
+				Side s = p.getPieceSide();
+
+				if (s.equals(Side.WHITE))
+					score += PSQ.psq(sq, p, gamePhase);
+				else
+					score -= PSQ.psq(sq, p, gamePhase);
+			}
+		}
+
+		if (gamePhase >= 224) { // endgame?
+			int scores[] = { 20, 10, 5, 0, 0, 5, 10, 20 };
+
+			Square kw = b.getKingSquare(Side.WHITE);
+			Square kb = b.getKingSquare(Side.BLACK);
+
+			score += scores[kb.getRank().ordinal()] * 1;
+			score += scores[kb.getFile().ordinal()] * 1;
+
+			score -= scores[kw.getRank().ordinal()] * 1;
+			score -= scores[kw.getFile().ordinal()] * 1;
+		}
+
 		// double pawns are no good
 		for(int x=0; x<8; x++) {
 			score += n_pawn[Side.WHITE.ordinal()][x] >= 2 ? -15 * (n_pawn[Side.WHITE.ordinal()][x] - 1): 0;
-			score -= n_pawn[Side.BLACK.ordinal()][x] >= 2 ? 15 * (n_pawn[Side.BLACK.ordinal()][x] - 1): 0;
+			score -= n_pawn[Side.BLACK.ordinal()][x] >= 2 ?  15 * (n_pawn[Side.BLACK.ordinal()][x] - 1): 0;
 		}
 
 		// check for isolated pawns (no good)
