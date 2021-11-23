@@ -58,7 +58,7 @@ class Tt
 		return null;
         }
 
-	void store(long hash, ttFlag f, short depth, short score, Move m) {
+	void store(long hash, ttFlag f, short depth, short score, Move m, Move m2) {
 	        int index = (int)(hash & (n_entries - 1));
 
 		ts.stores++;
@@ -109,6 +109,7 @@ class Tt
 		e.f     = f;
 		e.age   = age;
 		e.m     = m;
+		e.m2    = m2;
 
 		elements[index][useSubIndex] = e;
 	}

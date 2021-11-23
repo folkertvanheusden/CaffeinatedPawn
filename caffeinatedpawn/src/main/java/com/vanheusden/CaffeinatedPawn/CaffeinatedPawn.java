@@ -487,6 +487,7 @@ class CaffeinatedPawn {
 		s.ttInvoked++;
 
 		Move ttMove = null;  // used later on for sorting
+		Move ttMove2 = null;  // used later on for sorting
 		TtElement te = tt.lookup(b.hashCode());
 		if (te != null) {
 			s.ttHit++;
@@ -494,6 +495,7 @@ class CaffeinatedPawn {
 			// no verification here because the move won't be played
 			// directly (but sorted)
 			ttMove = te.m;
+			ttMove2 = te.m2;
 
 			if (te.depth >= depth) {
 				s.ttHitGood++;
@@ -531,6 +533,7 @@ class CaffeinatedPawn {
 
 		List<Move> bestPv = null;
 
+		Move ttm2 = null;
 		Move iidMove = null;  // nm is also doing a reduced depth search
 		boolean inCheck = b.isKingAttacked();
 		int nmReduceDepth = depth > 6 ? 4 : 3;
@@ -585,6 +588,9 @@ class CaffeinatedPawn {
 				iidMove = iid.pv.get(0);
 			}
 		}
+		
+		if (iidMove == null)
+			iidMove = ttMove2;
 
 		List<Move> moves = orderMoves(b, b.pseudoLegalMoves(), ttMove, sibling, iidMove);
 
@@ -643,6 +649,9 @@ class CaffeinatedPawn {
 			if (score > r.score) {
 				r.score = score;
 
+				if (bestPv != null)
+					ttm2 = bestPv.get(0);
+
 				bestPv = child.pv;
 				if (bestPv == null)
 					bestPv = new LinkedList<Move>();
@@ -685,7 +694,7 @@ class CaffeinatedPawn {
 		}
 
 		if (r.notInTt == false)
-			tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? m : ttMove);
+			tt.store(b.hashCode(), flag, depth, r.score, r.score > startAlpha || ttMove == null ? m : ttMove, ttm2);
 
 		return r;
 	}
