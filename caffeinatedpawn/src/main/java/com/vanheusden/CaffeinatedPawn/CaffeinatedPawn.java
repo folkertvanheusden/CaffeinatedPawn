@@ -1072,6 +1072,22 @@ class CaffeinatedPawn {
                                 emit(b.getFen());
                         else if (line.equals("board"))
                                 emit(String.format("%s", b));
+                        else if (line.equals("ttprobe")) {
+				TtElement te = cp.tt.lookup(b.hashCode());
+
+				if (te == null)
+					emit("# No tt move");
+				else {
+					emit(String.format("# hash: %d", te.hash));
+					emit(String.format("# score: %d", te.score));
+					emit(String.format("# age: %d", te.age));
+					emit(String.format("# depth: %d", te.depth));
+					emit(String.format("# flags: %s", te.f));
+					emit(String.format("# pri move: %s", te.m));
+					emit(String.format("# sec move: %s", te.m2));
+				}
+
+			}
                         else if (parts[0].equals("play")) {
 				int thinkTime = Integer.parseInt(parts[1]);
 
